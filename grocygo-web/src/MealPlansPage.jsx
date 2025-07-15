@@ -8,7 +8,7 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 // Real API for AI suggestions
 async function getMealSuggestions(inventory = [], diet = '') {
   const token = await auth.currentUser?.getIdToken();
-  const res = await fetch('http://localhost:8000/mealplan-suggestions', {
+  const res = await fetch('https://grocygo.onrender.com/mealplan-suggestions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
