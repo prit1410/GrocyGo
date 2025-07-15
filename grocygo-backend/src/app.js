@@ -1,0 +1,34 @@
+const express = require('express');
+const cors = require('cors');
+const app = express();
+const inventoryRoutes = require('./routes/inventory');
+const recipesRoutes = require('./routes/recipes');
+const mealPlansRoutes = require('./routes/mealPlans');
+const shoppingRoutes = require('./routes/shopping');
+const notificationsRoutes = require('./routes/notifications');
+const analyticsRoutes = require('./routes/analytics');
+
+app.use(express.json());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
+
+// Health check route
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'GrocyGo backend is running!' });
+});
+
+app.use('/api/inventory', inventoryRoutes);
+app.use('/api/recipes', recipesRoutes);
+app.use('/api/meal-plans', mealPlansRoutes);
+// AI meal plan suggestions proxy (for frontend fetch)
+app.use('/api/meal-plans/suggestions', (req, res, next) => {
+  // Forward to controller
+  require('./controllers/mealPlanController').getSuggestions(req, res, next);
+});
+app.use('/api/shopping', shoppingRoutes);
+app.use('/api/notifications', notificationsRoutes);
+app.use('/api/analytics', analyticsRoutes);
+
+module.exports = app;
