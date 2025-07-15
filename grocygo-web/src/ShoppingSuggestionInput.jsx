@@ -13,7 +13,7 @@ export default function ShoppingSuggestionInput({ label, value, onChange, ...pro
 
   useEffect(() => {
     if (input.length > 0) {
-      axios.get('http://localhost:8080/api/shopping/suggestions', { params: { q: input } })
+      axios.get('https://grocy-go.vercel.app/api/shopping/suggestions', { params: { q: input } })
         .then(res => setSuggestions(res.data));
       setOpen(true);
     } else {
