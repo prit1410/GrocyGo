@@ -1,0 +1,16 @@
+// Firebase Admin SDK initialization for Node.js backend
+const admin = require('firebase-admin');
+
+// You need to download your service account key from Firebase Console
+// and save it as serviceAccountKey.json in the config folder.
+const serviceAccount = require('./serviceAccountKey.json');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  storageBucket: 'grocygo-c9820.appspot.com',
+});
+
+const db = admin.firestore();
+const bucket = admin.storage().bucket();
+
+module.exports = { admin, db, bucket };

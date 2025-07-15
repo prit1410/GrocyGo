@@ -1,0 +1,10 @@
+flask
+sentence-transformers
+pandas
+gunicorn
+uvicorn
+fastapi
+python-dotenv
+flask-cors
+requests
+numpy
