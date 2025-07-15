@@ -9,7 +9,7 @@ import { Box, Paper, Typography, IconButton, Avatar, Grid, Button, Divider } fro
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LogoutIcon from '@mui/icons-material/Logout';
 
-const API_BASE = 'https://grocy-go.vercel.app/api/analytics';
+const API_BASE = 'https://grocygo.onrender.com/api/analytics';
 
 async function fetchAnalytics(endpoint) {
   // Wait for user to be available before making the request

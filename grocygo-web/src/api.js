@@ -1,7 +1,7 @@
 // AI Suggested Recipes API (returns matched/missing ingredients)
 export const getSuggestedRecipes = async (ingredients, course = '', diet = '') => {
   // ingredients: array of strings
-  const res = await axios.post('https://grocy-go.vercel.app/suggest', { ingredients, course, diet });
+  const res = await axios.post('https://grocygo.onrender.com/suggest', { ingredients, course, diet });
   // The FastAPI returns an array directly, not { suggestions: [...] }
   return Array.isArray(res.data) ? res.data : [];
 };
@@ -15,7 +15,7 @@ export const getSuggestions = async (q = '') => {
 import axios from 'axios';
 import { auth } from './firebase';
 
-const API_BASE = 'https://grocy-go.vercel.app/api';
+const API_BASE = 'https://grocygo.onrender.com/api';
 
 
 export const getInventory = async () => {
