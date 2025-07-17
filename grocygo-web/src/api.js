@@ -177,7 +177,7 @@ export const getAnalyticsStats = async () => {
 
 export async function useIngredients(usedIngredients) {
   const token = await auth.currentUser.getIdToken();
-  return fetch('/api/inventory/use', {
+  return fetch(`${API_BASE}/inventory/use`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
