@@ -10,6 +10,7 @@ import { Card, CardContent, CardMedia, Typography, Grid, Box, Button, Link, Text
 
 
 
+
 function RecipesPage({ forceOpenDialog }) {
   const [recipes, setRecipes] = useState([]);
   const [user, setUser] = useState(null);
@@ -21,39 +22,36 @@ function RecipesPage({ forceOpenDialog }) {
   // New: AI filter states
   const [aiCourse, setAiCourse] = useState('');
   const [aiDiet, setAiDiet] = useState('');
+  // Refresh triggers
+  const [recipesRefresh, setRecipesRefresh] = useState(0);
+  const [suggestRefresh, setSuggestRefresh] = useState(0);
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);
     return unsub;
   }, []);
 
+  // Only load data on first mount or when refresh is pressed
   useEffect(() => {
-    const fetchAll = async () => {
-      if (user) {
-        await Promise.all([fetchRecipes(), fetchInventory()]);
-        setLoading(false);
-      }
-    };
-    fetchAll();
-  }, [user]);
+    if (user) {
+      setLoading(true);
+      Promise.all([fetchRecipes(), fetchInventory()]).then(() => setLoading(false));
+    }
+    // eslint-disable-next-line
+  }, [user, recipesRefresh]);
 
-  // Fetch AI suggested recipes after inventory or filters change
+  // Only fetch suggestions on first mount, filter change, or refresh
   useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (inventoryItems.length > 0) {
-        setSuggestLoading(true);
-        try {
-          const aiIngredients = inventoryItems.map(i => i.name || i);
-          const res = await getSuggestedRecipes(aiIngredients, aiCourse, aiDiet);
-          setSuggestedRecipes(res);
-        } catch (e) {
-          setSuggestedRecipes([]);
-        }
-        setSuggestLoading(false);
-      }
-    };
-    fetchSuggestions();
-  }, [inventoryItems, aiCourse, aiDiet]);
+    if (inventoryItems.length > 0) {
+      setSuggestLoading(true);
+      const aiIngredients = inventoryItems.map(i => i.name || i);
+      getSuggestedRecipes(aiIngredients, aiCourse, aiDiet)
+        .then(res => setSuggestedRecipes(res))
+        .catch(() => setSuggestedRecipes([]))
+        .finally(() => setSuggestLoading(false));
+    }
+    // eslint-disable-next-line
+  }, [inventoryItems, aiCourse, aiDiet, suggestRefresh]);
 
   // Open Add dialog if forced by parent (App)
   useEffect(() => {
@@ -141,8 +139,8 @@ function RecipesPage({ forceOpenDialog }) {
     <Box sx={{ width: '100%', p: { xs: 1, md: 4 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" sx={{ flexGrow: 1 }}>Recipes</Typography>
+        <Button variant="outlined" color="secondary" sx={{ mr: 2 }} onClick={() => setRecipesRefresh(r => r + 1)}>Refresh</Button>
         <Button variant="contained" color="primary" onClick={() => setDialogOpen(true)}>Add Recipe</Button>
-        {/* Logout button removed as requested */}
       </Box>
       <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>
         Save and manage your favorite recipes
@@ -222,6 +220,7 @@ function RecipesPage({ forceOpenDialog }) {
       {/* AI Recipe Filters */}
       <Box sx={{ mt: 4, mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
         <Typography variant="h4" sx={{ mr: 2 }}>Suggested Recipes (AI)</Typography>
+        <Button variant="outlined" color="secondary" sx={{ mr: 2 }} onClick={() => setSuggestRefresh(r => r + 1)}>Refresh</Button>
         <select value={aiCourse} onChange={e => setAiCourse(e.target.value)} style={{ marginRight: 12 }}>
           <option value="">All Courses</option>
           {['Dinner','Lunch','Side Dish','South Indian Breakfast','Snack','Dessert','Appetizer','Main Course','World Breakfast','Indian Breakfast','North Indian Breakfast','One Pot Dish','Brunch'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
