@@ -42,19 +42,16 @@ export default function InventoryPage() {
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
-  const firstLoad = useRef(true);
 
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged(setUser);
+    const unsub = auth.onAuthStateChanged(async (u) => {
+      setUser(u);
+      if (u) {
+        await fetchItems();
+      }
+    });
     return unsub;
   }, []);
-
-  useEffect(() => {
-    if (user && firstLoad.current) {
-      fetchItems();
-      firstLoad.current = false;
-    }
-  }, [user]);
 
   const fetchItems = async () => {
     setLoading(true);
