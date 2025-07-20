@@ -5,10 +5,10 @@ import IngredientUsageDialog from './IngredientUsageDialog';
 import { auth } from './firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 
-// Real API for AI suggestions
+// Real API for AI meal plan suggestions
 async function getMealSuggestions(inventory = [], diet = '') {
   const token = await auth.currentUser?.getIdToken();
-  const res = await fetch('https://grocygo.onrender.com/mealplan-suggestions', {
+  const res = await fetch('https://grocygo.onrender.com/api/ai/mealplan-suggestions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

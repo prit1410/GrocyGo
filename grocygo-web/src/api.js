@@ -1,8 +1,8 @@
 // AI Suggested Recipes API (returns matched/missing ingredients)
 export const getSuggestedRecipes = async (ingredients, course = '', diet = '') => {
   // ingredients: array of strings
-  const res = await axios.post('https://grocygo.onrender.com/suggest', { ingredients, course, diet });
-  // The FastAPI returns an array directly, not { suggestions: [...] }
+  const res = await axios.post('https://grocygo.onrender.com/api/ai/recipe-suggestions', { ingredients, course, diet });
+  // The Node.js backend returns an array directly, not { suggestions: [...] }
   return Array.isArray(res.data) ? res.data : [];
 };
 // Suggestions API
