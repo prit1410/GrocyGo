@@ -66,10 +66,31 @@ exports.getSuggestions = async (req, res) => {
 
     // Fetch user's recipes
     const recipesSnap = await db.collection('user').doc(userId).collection('recipes').get();
-    const recipes = recipesSnap.docs.map(doc => doc.data());
+    const userRecipes = recipesSnap.docs.map(doc => doc.data());
+
+    // Also load public/AI recipes from CSV
+    const { getRecipeData } = require('../ai/utils');
+    let publicRecipes = [];
+    try {
+      publicRecipes = await getRecipeData();
+    } catch (e) {
+      publicRecipes = [];
+    }
+
+    // Combine user and public recipes
+    const allRecipes = [
+      ...userRecipes.map(r => ({
+        name: r.name,
+        items: Array.isArray(r.items) ? r.items : [],
+      })),
+      ...publicRecipes.map(r => ({
+        name: r.recipe_title,
+        items: (r.ingredients || '').split('|').map(i => ({ name: i.trim() })).filter(i => i.name),
+      })),
+    ];
 
     // Prepare recipes for AI backend (matched_ingredients/missing_ingredients must be present)
-    const aiRecipes = recipes.map(r => {
+    const aiRecipes = allRecipes.map(r => {
       let ingredients = [];
       if (Array.isArray(r.items)) {
         ingredients = r.items.map(i => (i.name || '').toLowerCase()).filter(Boolean);
