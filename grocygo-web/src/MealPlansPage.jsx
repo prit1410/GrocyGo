@@ -471,6 +471,16 @@ export default function MealPlansPage() {
                 {selectedAISuggestion.diet ? <span> &middot; {selectedAISuggestion.diet}</span> : null}
                 {selectedAISuggestion.prep_time ? <span> &middot; {selectedAISuggestion.prep_time}</span> : null}
               </div>
+              {selectedAISuggestion.recipe_image && (
+                <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                  <img
+                    src={selectedAISuggestion.recipe_image}
+                    alt={selectedAISuggestion.recipe_title}
+                    style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+                    onError={e => { e.target.style.display = 'none'; }}
+                  />
+                </div>
+              )}
               {selectedAISuggestion.description && (
                 <div style={{ color: '#888', fontSize: 14, marginBottom: 12 }}>{selectedAISuggestion.description}</div>
               )}
