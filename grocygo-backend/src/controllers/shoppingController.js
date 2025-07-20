@@ -52,7 +52,7 @@ exports.remove = async (req, res) => {
   }
 };
 
-// AI suggestions for shopping list (calls FastAPI AI backend)
+// AI suggestions for shopping list (calls Node.js AI backend)
 exports.getSuggestions = async (req, res) => {
   try {
     if (!req.user || !req.user.uid) {
@@ -64,52 +64,9 @@ exports.getSuggestions = async (req, res) => {
     const inventorySnap = await db.collection('user').doc(userId).collection('inventory').get();
     const inventory = inventorySnap.docs.map(doc => doc.data().name).filter(Boolean);
 
-    // Fetch user's recipes (for now, just get all, could filter by meal plan)
-    const recipesSnap = await db.collection('user').doc(userId).collection('recipes').get();
-    const recipes = recipesSnap.docs.map(doc => doc.data());
-
-    // Prepare recipes for AI backend (matched_ingredients/missing_ingredients must be present)
-    // If not present, compute missing_ingredients as all items not in inventory
-    const aiRecipes = recipes.map(r => {
-      let ingredients = [];
-      if (Array.isArray(r.items)) {
-        ingredients = r.items.map(i => (i.name || '').toLowerCase()).filter(Boolean);
-      }
-      // If no ingredients, skip this recipe
-      if (!r.name || ingredients.length === 0) return null;
-      const matched = ingredients.filter(i => inventory.includes(i));
-      const missing = ingredients.filter(i => !inventory.includes(i));
-      return {
-        recipe_title: r.name,
-        matched_ingredients: matched,
-        missing_ingredients: missing
-      };
-    }).filter(Boolean);
-
-    // Debug: Log inventory, recipes, and aiRecipes
-    console.log('Inventory:', inventory);
-    console.log('Recipes:', recipes);
-    console.log('aiRecipes:', aiRecipes);
-
-    // If no recipes or all recipes have no missing ingredients, return empty array
-    const aiRecipesWithMissing = aiRecipes.filter(r => r.missing_ingredients && r.missing_ingredients.length > 0);
-    console.log('aiRecipesWithMissing:', aiRecipesWithMissing);
-    if (!aiRecipesWithMissing.length) {
-      return res.json([]);
-    }
-
-    // Call FastAPI backend
-    try {
-      const aiRes = await axios.post('http://localhost:8000/shopping-suggestions', {
-        inventory,
-        recipes: aiRecipesWithMissing
-      });
-      // aiRes.data.shopping_list is the result
-      res.json(aiRes.data.shopping_list || []);
-    } catch (aiErr) {
-      console.error('Error calling FastAPI backend:', aiErr.response ? aiErr.response.data : aiErr);
-      res.status(502).json({ error: 'Failed to get suggestions from AI backend', details: aiErr.message });
-    }
+    // Call Node.js AI backend
+    const aiRes = await axios.post('http://localhost:8080/api/ai/shopping-suggestions', { inventory });
+    res.json(aiRes.data);
   } catch (err) {
     console.error('AI SUGGESTION ERROR:', err.stack || err);
     res.status(500).json({ error: err.message, stack: err.stack });

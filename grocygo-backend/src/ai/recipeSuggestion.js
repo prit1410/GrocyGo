@@ -17,12 +17,22 @@ async function recipeSuggestion(reqBody) {
   const userIngredients = new Set(ingredients.map(normalizeIngredient));
   const userVec = encodeIngredients([...userIngredients]);
 
+  // Debug logging
+  console.log('AI DEBUG: User ingredients:', [...userIngredients]);
+  console.log('AI DEBUG: Course filter:', course, 'Diet filter:', diet);
+
   // Filter by course and diet
   let filtered = df.filter(r =>
     (!course || (r.course || '').toLowerCase().includes(course.toLowerCase())) &&
     (!diet || (r.diet || '').toLowerCase().includes(diet.toLowerCase()))
   );
   if (!filtered.length) filtered = df;
+
+  if (filtered.length > 0) {
+    console.log('AI DEBUG: First recipe in filtered:', filtered[0].recipe_title, filtered[0].ingredients);
+  } else {
+    console.log('AI DEBUG: No recipes after filtering.');
+  }
 
   // Compute vectors for filtered recipes
   const recipeVecs = filtered.map(r => encodeIngredients((r.ingredients || '').split('|').map(normalizeIngredient)));
@@ -38,6 +48,8 @@ async function recipeSuggestion(reqBody) {
     const recipe_ings = (r.ingredients || '').split('|').map(normalizeIngredient).filter(Boolean);
     const matched = recipe_ings.filter(i => userIngredients.has(i));
     const missing = recipe_ings.filter(i => !userIngredients.has(i));
+    // Debug log for each result
+    console.log('AI DEBUG: Recipe:', r.recipe_title, 'Matched:', matched, 'Missing:', missing);
     return {
       recipe_title: r.recipe_title,
       ingredients: r.ingredients,

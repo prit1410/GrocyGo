@@ -1,6 +1,7 @@
 const { db } = require('../config/firebase');
 
 // All recipes are stored under users/userid/recipes
+// Note: AI recipe suggestions are handled by /api/ai/recipe-suggestions (Node.js AI endpoint)
 exports.getAll = async (req, res) => {
   try {
     const userId = req.user.uid;
