@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { getShoppingLists, addShoppingList, deleteShoppingList } from './api';
 import { auth } from './firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -45,16 +45,25 @@ export default function ShoppingListsPage() {
     return unsub;
   }, []);
 
+  const [loading, setLoading] = useState(false);
+  const firstLoad = useRef(true);
+
   useEffect(() => {
-    if (user) {
+    if (user && firstLoad.current) {
       fetchLists();
       fetchSuggestions();
+      firstLoad.current = false;
     }
   }, [user]);
 
   const fetchLists = async () => {
-    const res = await getShoppingLists();
-    setLists(res.data);
+    setLoading(true);
+    try {
+      const res = await getShoppingLists();
+      setLists(res.data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchSuggestions = async () => {
@@ -135,6 +144,14 @@ export default function ShoppingListsPage() {
                 sx={{ ml: 2 }}
                 onClick={() => setDialogOpen(true)}
               >+ Add</Button>
+              <Button
+                variant="outlined"
+                sx={{ ml: 2 }}
+                onClick={fetchLists}
+                disabled={loading}
+              >
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </Button>
             </Box>
             <div style={{ color: '#888', marginBottom: 8 }}>Estimated total: ${estimatedTotal.toFixed(2)}</div>
             <form onSubmit={e => { e.preventDefault(); setDialogOpen(true); }}>
@@ -152,34 +169,40 @@ export default function ShoppingListsPage() {
                 inputProps={{ readOnly: true }}
               />
             </form>
-            {lists.length === 0 ? (
-              <div style={{ color: '#aaa', textAlign: 'center', margin: '48px 0' }}>
-                Your shopping list is empty.<br />Add items using the input above.
-              </div>
+            {loading ? (
+              <div style={{ color: '#888', textAlign: 'center', margin: '48px 0', fontSize: 18 }}>Loading...</div>
             ) : (
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {lists.map(list => {
-                  // Show the name, and fallback to item if name is missing
-                  const displayName = list.name || list.item || '(No name)';
-                  return (
-                    <li key={list.id} style={{
-                      display: 'flex', alignItems: 'center', borderBottom: '1px solid #f0f0f0', padding: '12px 0'
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <span style={{ fontWeight: 500 }}>{displayName}</span>
-                        <span style={{ color: '#888', marginLeft: 8 }}>
-                          {list.quantity} {list.unit} {list.category && `| ${list.category}`}
-                        </span>
-                      </div>
-                      <Button
-                        variant="text"
-                        color="error"
-                        onClick={() => handleDelete(list.id)}
-                      >Delete</Button>
-                    </li>
-                  );
-                })}
-              </ul>
+              <>
+                {lists.length === 0 ? (
+                  <div style={{ color: '#aaa', textAlign: 'center', margin: '48px 0' }}>
+                    Your shopping list is empty.<br />Add items using the input above.
+                  </div>
+                ) : (
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                    {lists.map(list => {
+                      // Show the name, and fallback to item if name is missing
+                      const displayName = list.name || list.item || '(No name)';
+                      return (
+                        <li key={list.id} style={{
+                          display: 'flex', alignItems: 'center', borderBottom: '1px solid #f0f0f0', padding: '12px 0'
+                        }}>
+                          <div style={{ flex: 1 }}>
+                            <span style={{ fontWeight: 500 }}>{displayName}</span>
+                            <span style={{ color: '#888', marginLeft: 8 }}>
+                              {list.quantity} {list.unit} {list.category && `| ${list.category}`}
+                            </span>
+                          </div>
+                          <Button
+                            variant="text"
+                            color="error"
+                            onClick={() => handleDelete(list.id)}
+                          >Delete</Button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </>
             )}
           </Box>
         </div>
