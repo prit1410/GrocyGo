@@ -59,7 +59,7 @@ exports.remove = async (req, res) => {
   }
 };
 
-// AI meal suggestions based on inventory (calls AI microservice)
+// AI meal suggestions based on inventory (calls Node.js AI endpoint)
 const axios = require('axios');
 exports.getSuggestions = async (req, res) => {
   try {
@@ -67,24 +67,12 @@ exports.getSuggestions = async (req, res) => {
     const userId = req.user.uid;
     const invSnap = await db.collection('user').doc(userId).collection('inventory').get();
     const inventory = invSnap.docs.map(doc => doc.data().name || '').filter(Boolean);
-    // Forward diet if provided
-    const { diet } = req.body || {};
-    const aiRes = await axios.post('http://localhost:8000/mealplan-suggestions', { inventory, diet });
-    // Map to UI format, include available/missing ingredients
-    const suggestions = (aiRes.data || []).map(s => ({
-      id: s.id,
-      name: s.name,
-      mealType: s.course,
-      cook_time: s.cook_time,
-      ingredientsAvailable: s.ingredients_available,
-      ingredientsTotal: s.ingredients_total,
-      ingredients: s.ingredients,
-      description: s.description,
-      instructions: s.instructions,
-      availableIngredients: s.available_ingredients || [],
-      missingIngredients: s.missing_ingredients || [],
-    }));
-    res.json(suggestions);
+    // Forward diet and course if provided
+    const { diet = '', course = '' } = req.body || {};
+    // Call local Node.js AI endpoint
+    const aiRes = await axios.post('http://localhost:8080/api/ai/mealplan-suggestions', { inventory, diet, course });
+    // Directly return AI response
+    res.json(aiRes.data);
   } catch (err) {
     console.error('mealplan AI suggestion error:', err);
     res.status(500).json({ error: err.message });
