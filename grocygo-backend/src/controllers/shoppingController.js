@@ -62,10 +62,36 @@ exports.getSuggestions = async (req, res) => {
     const userId = req.user.uid;
     // Fetch inventory from Firestore
     const inventorySnap = await db.collection('user').doc(userId).collection('inventory').get();
-    const inventory = inventorySnap.docs.map(doc => doc.data().name).filter(Boolean);
+    const inventory = inventorySnap.docs.map(doc => (doc.data().name || '').toLowerCase()).filter(Boolean);
+
+    // Fetch user's recipes
+    const recipesSnap = await db.collection('user').doc(userId).collection('recipes').get();
+    const recipes = recipesSnap.docs.map(doc => doc.data());
+
+    // Prepare recipes for AI backend (matched_ingredients/missing_ingredients must be present)
+    const aiRecipes = recipes.map(r => {
+      let ingredients = [];
+      if (Array.isArray(r.items)) {
+        ingredients = r.items.map(i => (i.name || '').toLowerCase()).filter(Boolean);
+      }
+      if (!r.name || ingredients.length === 0) return null;
+      const matched = ingredients.filter(i => inventory.includes(i));
+      const missing = ingredients.filter(i => !inventory.includes(i));
+      return {
+        recipe_title: r.name,
+        matched_ingredients: matched,
+        missing_ingredients: missing
+      };
+    }).filter(Boolean);
+
+    // Only send recipes with missing ingredients
+    const aiRecipesWithMissing = aiRecipes.filter(r => r.missing_ingredients && r.missing_ingredients.length > 0);
+    if (!aiRecipesWithMissing.length) {
+      return res.json([]);
+    }
 
     // Call Node.js AI backend
-    const aiRes = await axios.post('http://localhost:8080/api/ai/shopping-suggestions', { inventory });
+    const aiRes = await axios.post('http://localhost:8080/api/ai/shopping-suggestions', { recipes: aiRecipesWithMissing });
     res.json(aiRes.data);
   } catch (err) {
     console.error('AI SUGGESTION ERROR:', err.stack || err);
