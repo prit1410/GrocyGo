@@ -13,7 +13,8 @@ export default function ShoppingSuggestionInput({ label, value, onChange, ...pro
 
   useEffect(() => {
     if (input.length > 0) {
-      axios.get('https://grocygo.onrender.com/api/shopping/suggestions', { params: { q: input } })
+      // Use new AI shopping suggestions endpoint
+      axios.post('https://grocygo.onrender.com/api/ai/shopping-suggestions', { inventory: [input] })
         .then(res => setSuggestions(res.data));
       setOpen(true);
     } else {

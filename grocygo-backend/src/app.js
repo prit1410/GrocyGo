@@ -6,7 +6,9 @@ const recipesRoutes = require('./routes/recipes');
 const mealPlansRoutes = require('./routes/mealPlans');
 const shoppingRoutes = require('./routes/shopping');
 const notificationsRoutes = require('./routes/notifications');
+
 const analyticsRoutes = require('./routes/analytics');
+const aiRoutes = require('./routes/ai');
 
 app.use(express.json());
 app.use(cors({
@@ -22,11 +24,8 @@ app.get('/api/health', (req, res) => {
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/recipes', recipesRoutes);
 app.use('/api/meal-plans', mealPlansRoutes);
-// AI meal plan suggestions proxy (for frontend fetch)
-app.use('/api/meal-plans/suggestions', (req, res, next) => {
-  // Forward to controller
-  require('./controllers/mealPlanController').getSuggestions(req, res, next);
-});
+// Unified AI endpoints
+app.use('/api/ai', aiRoutes);
 app.use('/api/shopping', shoppingRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/analytics', analyticsRoutes);
