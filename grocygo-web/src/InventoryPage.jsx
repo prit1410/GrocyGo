@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import SuggestionInput from './SuggestionInput';
 import { getInventory, addInventory, deleteInventory } from './api';
 import { auth } from './firebase';
@@ -41,18 +41,29 @@ export default function InventoryPage() {
   const [isSignup, setIsSignup] = useState(false); // <-- move this here
   const navigate = useNavigate();
 
+  const [loading, setLoading] = useState(false);
+  const firstLoad = useRef(true);
+
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);
     return unsub;
   }, []);
 
   useEffect(() => {
-    if (user) fetchItems();
+    if (user && firstLoad.current) {
+      fetchItems();
+      firstLoad.current = false;
+    }
   }, [user]);
 
   const fetchItems = async () => {
-    const res = await getInventory();
-    setItems(res.data);
+    setLoading(true);
+    try {
+      const res = await getInventory();
+      setItems(res.data);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAdd = async (e) => {
@@ -150,6 +161,14 @@ export default function InventoryPage() {
         >
           Add Item
         </Button>
+        <Button
+          variant="outlined"
+          sx={{ ml: 2 }}
+          onClick={fetchItems}
+          disabled={loading}
+        >
+          {loading ? 'Refreshing...' : 'Refresh'}
+        </Button>
       </Box>
       
       <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>
@@ -172,45 +191,49 @@ export default function InventoryPage() {
         />
       </Box>
 
-      <Grid container spacing={2}>
-        {filteredItems.map(item => (
-          <Grid item xs={12} sm={6} md={4} key={item.id}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <Typography variant="h6">{item.name}</Typography>
-                  <IconButton onClick={() => handleDelete(item.id)} size="small">
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
-                <Typography color="text.secondary">
-                  {item.quantity} {item.unit}
-                </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                  <LocationOnIcon fontSize="small" sx={{ mr: 0.5 }} />
-                  <Typography variant="body2">{item.location}</Typography>
-                </Box>
-                {item.expiryDate && (
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      mt: 1,
-                      color: getExpiryStatus(item.expiryDate).color,
-                      bgcolor: `${getExpiryStatus(item.expiryDate).color}22`,
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 1,
-                      display: 'inline-block'
-                    }}
-                  >
-                    {getExpiryStatus(item.expiryDate).text}
+      {loading ? (
+        <Box sx={{ textAlign: 'center', color: '#888', my: 6, fontSize: 18 }}>Loading...</Box>
+      ) : (
+        <Grid container spacing={2}>
+          {filteredItems.map(item => (
+            <Grid item xs={12} sm={6} md={4} key={item.id}>
+              <Card sx={{ height: '100%' }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Typography variant="h6">{item.name}</Typography>
+                    <IconButton onClick={() => handleDelete(item.id)} size="small">
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                  <Typography color="text.secondary">
+                    {item.quantity} {item.unit}
                   </Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                    <LocationOnIcon fontSize="small" sx={{ mr: 0.5 }} />
+                    <Typography variant="body2">{item.location}</Typography>
+                  </Box>
+                  {item.expiryDate && (
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        mt: 1,
+                        color: getExpiryStatus(item.expiryDate).color,
+                        bgcolor: `${getExpiryStatus(item.expiryDate).color}22`,
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                        display: 'inline-block'
+                      }}
+                    >
+                      {getExpiryStatus(item.expiryDate).text}
+                    </Typography>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      )}
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Item</DialogTitle>

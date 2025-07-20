@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { getMealPlans, addMealPlan, deleteMealPlan, getRecipes } from './api';
 import AddMealDialog from './AddMealDialog';
 import IngredientUsageDialog from './IngredientUsageDialog';
@@ -46,16 +46,20 @@ export default function MealPlansPage() {
   const [completedMeals, setCompletedMeals] = useState({}); // { planId: true }
   const [selectedDiet, setSelectedDiet] = useState('');
 
+  const [loading, setLoading] = useState(false);
+  const firstLoad = useRef(true);
+
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);
     return unsub;
   }, []);
 
   useEffect(() => {
-    if (user) {
+    if (user && firstLoad.current) {
       fetchPlans();
       fetchSuggestions();
       fetchRecipes();
+      firstLoad.current = false;
     }
   }, [user]);
 
@@ -65,18 +69,23 @@ export default function MealPlansPage() {
   };
 
   const fetchPlans = async () => {
-    const res = await getMealPlans();
-    // Transform to { Monday: { Breakfast: {...}, ... }, ... }
-    const week = {};
-    daysOfWeek.forEach(day => {
-      week[day] = { Breakfast: null, Lunch: null, Dinner: null };
-    });
-    res.data.forEach(plan => {
-      if (week[plan.day] && plan.mealType) {
-        week[plan.day][plan.mealType] = plan;
-      }
-    });
-    setPlans(week);
+    setLoading(true);
+    try {
+      const res = await getMealPlans();
+      // Transform to { Monday: { Breakfast: {...}, ... }, ... }
+      const week = {};
+      daysOfWeek.forEach(day => {
+        week[day] = { Breakfast: null, Lunch: null, Dinner: null };
+      });
+      res.data.forEach(plan => {
+        if (week[plan.day] && plan.mealType) {
+          week[plan.day][plan.mealType] = plan;
+        }
+      });
+      setPlans(week);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchSuggestions = async () => {
@@ -219,7 +228,28 @@ export default function MealPlansPage() {
         <div style={{
           background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 2px 8px #0001', marginBottom: 24
         }}>
-          <h2 style={{ margin: 0, marginBottom: 24 }}>Weekly Meal Plan</h2>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+            <h2 style={{ margin: 0, flex: 1 }}>Weekly Meal Plan</h2>
+            <button
+              style={{
+                background: '#19c37d',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '6px 16px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                marginLeft: 12
+              }}
+              onClick={fetchPlans}
+              disabled={loading}
+            >
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+          {loading ? (
+            <div style={{ color: '#888', textAlign: 'center', margin: '48px 0', fontSize: 18 }}>Loading...</div>
+          ) : (
+            <>
           {daysOfWeek.map(day => (
             <div key={day} style={{ marginBottom: 16 }}>
               <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{day}</div>
@@ -346,6 +376,8 @@ export default function MealPlansPage() {
               </div>
             </div>
           ))}
+            </>
+          )}
         </div>
       </div>
       <div style={{
