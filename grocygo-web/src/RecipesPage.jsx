@@ -150,8 +150,18 @@ function RecipesPage({ forceOpenDialog }) {
       <Grid container spacing={2}>
         {Array.isArray(recipes) && recipes.map(recipe => (
           <Grid item xs={12} sm={6} md={4} key={recipe.id}>
-            <Card sx={{ height: '100%' }}>
-              <CardContent>
+            <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+              {recipe.recipe_image && (
+                <CardMedia
+                  component="img"
+                  height="180"
+                  image={recipe.recipe_image}
+                  alt={recipe.name}
+                  sx={{ objectFit: 'cover', borderRadius: '8px 8px 0 0', borderBottom: '1px solid #eee' }}
+                  onError={e => { e.target.style.display = 'none'; }}
+                />
+              )}
+              <CardContent sx={{ flexGrow: 1 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <Typography variant="h6">{recipe.name}</Typography>
                   <IconButton onClick={() => handleDelete(recipe.id)} size="small">
@@ -255,26 +265,14 @@ function RecipesPage({ forceOpenDialog }) {
                     <Card sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                       <CardContent sx={{ flexGrow: 1 }}>
                         <Typography variant="h6" sx={{ mb: 1 }}>{r.recipe_title}</Typography>
-                        {r.url && (
+                        {r.recipe_image && (
                           <Box sx={{ mb: 2, textAlign: 'center' }}>
-                            <a href={r.url} target="_blank" rel="noopener noreferrer">
-                              <img
-                                src={`https://www.google.com/s2/favicons?domain=${encodeURIComponent(r.url)}`}
-                                alt="Favicon"
-                                style={{ width: 20, height: 20, verticalAlign: 'middle', marginRight: 8 }}
-                              />
-                              <span style={{ fontSize: 15, color: '#1976d2', textDecoration: 'underline' }}>
-                                {r.url.replace(/^https?:\/\//, '').split('/')[0]}
-                              </span>
-                            </a>
-                            <Box sx={{ mt: 1 }}>
-                              <img
-                                src={r.image && r.image.length > 0 ? r.image : `https://api.thumbnail.ws/api/ab1234567890/thumbnail/get?url=${encodeURIComponent(r.url)}&width=400`}
-                                alt={r.recipe_title}
-                                style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
-                                onError={e => { e.target.style.display = 'none'; }}
-                              />
-                            </Box>
+                            <img
+                              src={r.recipe_image}
+                              alt={r.recipe_title}
+                              style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+                              onError={e => { e.target.style.display = 'none'; }}
+                            />
                           </Box>
                         )}
                         {/* Show course and diet if present */}

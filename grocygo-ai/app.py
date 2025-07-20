@@ -24,7 +24,7 @@ class MealPlanSuggestionItem(BaseModel):
     recipe_title: str
     ingredients: str
     url: str
-    image: str
+    recipe_image: str
     prep_time: str
     course: str
     diet: str
@@ -124,12 +124,12 @@ def suggest_recipes(req: InventoryRequest):
 
         # Fallback if scores too low
         if max(scores).item() < 0.1:
-            results = filtered_df.sample(min(5, len(filtered_df)))[['recipe_title', 'ingredients', 'url', 'image', 'prep_time', 'course', 'diet']].to_dict(orient='records')
+            results = filtered_df.sample(min(5, len(filtered_df)))[['recipe_title', 'ingredients', 'url', 'recipe_image', 'prep_time', 'course', 'diet']].to_dict(orient='records')
         else:
             top_indices = top_results.tolist() if hasattr(top_results, 'tolist') else top_results
             if isinstance(top_indices, list) and len(top_indices) > 0 and hasattr(top_indices[0], 'item'):
                 top_indices = [int(x.item()) for x in top_indices]
-            cols = ['recipe_title', 'ingredients', 'url', 'image', 'prep_time', 'course', 'diet']
+            cols = ['recipe_title', 'ingredients', 'url', 'recipe_image', 'prep_time', 'course', 'diet']
             for col in cols:
                 if col not in filtered_df.columns:
                     filtered_df[col] = ""
@@ -229,7 +229,7 @@ def mealplan_suggestions(req: MealPlanSuggestionRequest = Body(...)):
                 "recipe_title": best['recipe_title'],
                 "ingredients": '|'.join(ingredient_names),
                 "url": best['url'] if 'url' in best else '',
-                "image": best['image'] if 'image' in best else '',
+                "recipe_image": best['recipe_image'] if 'recipe_image' in best else '',
                 "prep_time": best['prep_time'] if 'prep_time' in best else '',
                 "course": best['course'],
                 "diet": best['diet'] if 'diet' in best else '',
