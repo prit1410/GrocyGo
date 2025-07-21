@@ -107,12 +107,10 @@ exports.getSuggestions = async (req, res) => {
     }).filter(Boolean);
     console.log('AI SUGGESTIONS DEBUG: aiRecipes:', aiRecipes);
 
-    // Call Node.js AI backend with inventory and all recipes
-    const aiRes = await axios.post('http://localhost:8080/api/ai/shopping-suggestions', {
-      inventory,
-      recipes: aiRecipes
-    });
-    res.json(aiRes.data);
+    // Call AI logic directly (in-process)
+    const shoppingSuggestion = require('../ai/shoppingSuggestion');
+    const suggestions = shoppingSuggestion({ inventory, recipes: aiRecipes });
+    res.json(suggestions);
   } catch (err) {
     console.error('AI SUGGESTION ERROR:', err.stack || err);
     res.status(500).json({ error: err.message, stack: err.stack });
