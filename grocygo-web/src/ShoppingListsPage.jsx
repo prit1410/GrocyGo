@@ -9,13 +9,14 @@ import {
 import ShoppingSuggestionInput from './ShoppingSuggestionInput';
 
 // Fetch AI shopping suggestions from backend (returns [{item, needed_for: [...]}, ...])
-async function getShoppingSuggestions(inventory = []) {
+// The backend uses the authenticated user's inventory and recipes; payload is ignored.
+async function getShoppingSuggestions() {
   const token = await auth.currentUser?.getIdToken();
   if (!token) return [];
   const res = await fetch('https://grocygo.onrender.com/api/ai/shopping-suggestions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ inventory })
+    body: JSON.stringify({})
   });
   const data = await res.json();
   // Always return an array for suggestions
