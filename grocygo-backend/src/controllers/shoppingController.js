@@ -94,32 +94,24 @@ exports.getSuggestions = async (req, res) => {
     ];
 
 
-    // Prepare recipes for AI backend (matched_ingredients/missing_ingredients must be present)
+    // Prepare recipes for AI backend: pass all recipes with their ingredients
     const aiRecipes = allRecipes.map(r => {
-      let ingredients = [];
-      if (Array.isArray(r.items)) {
-        ingredients = r.items.map(i => (i.name || '').toLowerCase()).filter(Boolean);
+      // Accept both 'ingredients' as string or items array
+      if (r.ingredients) {
+        return { recipe_title: r.name, ingredients: r.ingredients };
+      } else if (Array.isArray(r.items)) {
+        return { recipe_title: r.name, ingredients: r.items };
+      } else {
+        return null;
       }
-      if (!r.name || ingredients.length === 0) return null;
-      const matched = ingredients.filter(i => inventory.includes(i));
-      const missing = ingredients.filter(i => !inventory.includes(i));
-      return {
-        recipe_title: r.name,
-        matched_ingredients: matched,
-        missing_ingredients: missing
-      };
     }).filter(Boolean);
-    console.log('AI SUGGESTIONS DEBUG: aiRecipesWithMissing:', aiRecipes.filter(r => r.missing_ingredients && r.missing_ingredients.length > 0));
+    console.log('AI SUGGESTIONS DEBUG: aiRecipes:', aiRecipes);
 
-    // Always send recipes with missing ingredients (even if only public/AI recipes)
-    const aiRecipesWithMissing = aiRecipes.filter(r => r.missing_ingredients && r.missing_ingredients.length > 0);
-    // If no suggestions, return empty array
-    if (!aiRecipesWithMissing.length) {
-      return res.json([]);
-    }
-
-    // Call Node.js AI backend
-    const aiRes = await axios.post('http://localhost:8080/api/ai/shopping-suggestions', { recipes: aiRecipesWithMissing });
+    // Call Node.js AI backend with inventory and all recipes
+    const aiRes = await axios.post('http://localhost:8080/api/ai/shopping-suggestions', {
+      inventory,
+      recipes: aiRecipes
+    });
     res.json(aiRes.data);
   } catch (err) {
     console.error('AI SUGGESTION ERROR:', err.stack || err);
