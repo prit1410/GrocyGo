@@ -52,7 +52,7 @@ exports.remove = async (req, res) => {
   }
 };
 
-// AI suggestions for shopping list (calls Node.js AI backend)
+// Smart Suggestions for shopping list (includes both user and public/AI recipes, always returns missing ingredients)
 exports.getSuggestions = async (req, res) => {
   try {
     if (!req.user || !req.user.uid) {
@@ -60,13 +60,16 @@ exports.getSuggestions = async (req, res) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
     const userId = req.user.uid;
+
     // Fetch inventory from Firestore
     const inventorySnap = await db.collection('user').doc(userId).collection('inventory').get();
     const inventory = inventorySnap.docs.map(doc => (doc.data().name || '').toLowerCase()).filter(Boolean);
+    console.log('AI SUGGESTIONS DEBUG: inventory:', inventory);
 
     // Fetch user's recipes
     const recipesSnap = await db.collection('user').doc(userId).collection('recipes').get();
     const userRecipes = recipesSnap.docs.map(doc => doc.data());
+    console.log('AI SUGGESTIONS DEBUG: userRecipes:', userRecipes);
 
     // Also load public/AI recipes from CSV
     const { getRecipeData } = require('../ai/utils');
@@ -76,8 +79,9 @@ exports.getSuggestions = async (req, res) => {
     } catch (e) {
       publicRecipes = [];
     }
+    console.log('AI SUGGESTIONS DEBUG: publicRecipes count:', publicRecipes.length);
 
-    // Combine user and public recipes
+    // Combine user and public recipes (always include public/AI recipes for suggestions)
     const allRecipes = [
       ...userRecipes.map(r => ({
         name: r.name,
@@ -88,6 +92,7 @@ exports.getSuggestions = async (req, res) => {
         items: (r.ingredients || '').split('|').map(i => ({ name: i.trim() })).filter(i => i.name),
       })),
     ];
+
 
     // Prepare recipes for AI backend (matched_ingredients/missing_ingredients must be present)
     const aiRecipes = allRecipes.map(r => {
@@ -104,9 +109,11 @@ exports.getSuggestions = async (req, res) => {
         missing_ingredients: missing
       };
     }).filter(Boolean);
+    console.log('AI SUGGESTIONS DEBUG: aiRecipesWithMissing:', aiRecipes.filter(r => r.missing_ingredients && r.missing_ingredients.length > 0));
 
-    // Only send recipes with missing ingredients
+    // Always send recipes with missing ingredients (even if only public/AI recipes)
     const aiRecipesWithMissing = aiRecipes.filter(r => r.missing_ingredients && r.missing_ingredients.length > 0);
+    // If no suggestions, return empty array
     if (!aiRecipesWithMissing.length) {
       return res.json([]);
     }
