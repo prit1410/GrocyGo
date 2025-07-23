@@ -244,7 +244,15 @@ function RecipesPage({ forceOpenDialog }) {
             return <Typography>No suggestions found.</Typography>;
           }
           return (
-            <Grid container spacing={2}>
+            <Grid
+              container
+              spacing={2}
+              sx={{
+                justifyContent: { xs: 'flex-start', md: 'space-evenly' },
+                alignItems: 'stretch',
+                alignContent: 'stretch',
+              }}
+            >
               {safeRecipes.map((r, i) => {
                 // Parse ingredients string to array
                 let ingredientsArr = [];
@@ -260,7 +268,7 @@ function RecipesPage({ forceOpenDialog }) {
                   missing = ingredientsArr.filter(ing => !invNames.includes(ing.toLowerCase()));
                 }
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={i} sx={{ display: 'flex', justifyContent: 'center' }}>
+                  <Grid item xs={12} sm={6} md={4} key={i} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'stretch' }}>
                     <Card sx={{
                       display: 'flex',
                       flexDirection: 'column',
@@ -271,6 +279,7 @@ function RecipesPage({ forceOpenDialog }) {
                       boxShadow: 2,
                       overflow: 'hidden',
                       background: '#fff',
+                      height: { xs: 540, md: 540 }, // Fixed height for all cards
                     }}>
                       {/* Image at top, fixed height, always full width */}
                       <Box sx={{
@@ -298,7 +307,7 @@ function RecipesPage({ forceOpenDialog }) {
                         )}
                       </Box>
                       {/* Details below image, natural height */}
-                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, pb: 0, minHeight: 0, overflow: 'hidden' }}>
                         <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.recipe_title}</Typography>
                         <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                           {r.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {r.course}</Typography>}
@@ -341,11 +350,14 @@ function RecipesPage({ forceOpenDialog }) {
                             ))}
                           </Box>
                         </Box>
+                      </Box>
+                      {/* Button always at the bottom */}
+                      <Box sx={{ p: 2, pt: 0, mt: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
                         <Button
                           variant="outlined"
                           color="primary"
                           fullWidth
-                          sx={{ mt: 1, fontWeight: 600, fontSize: 15, borderRadius: 2 }}
+                          sx={{ fontWeight: 600, fontSize: 15, borderRadius: 2 }}
                           onClick={() => handleSaveToMyRecipes(r)}
                         >
                           Save to My Recipes
