@@ -508,7 +508,7 @@ export default function MealPlansPage() {
                   <img
                     src={selectedAISuggestion.recipe_image}
                     alt={selectedAISuggestion.recipe_title}
-                    style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+                    style={{ width: '100%', maxHeight: 400, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
                     onError={e => { e.target.style.display = 'none'; }}
                   />
                 </div>
