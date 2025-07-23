@@ -269,7 +269,7 @@ function RecipesPage({ forceOpenDialog }) {
                       maxHeight: 420,
                       borderRadius: 3,
                       boxShadow: 2,
-                      overflow: 'hidden',
+                      overflow: 'visible', // allow content to show
                       position: 'relative',
                       background: '#fff',
                     }}>
@@ -291,7 +291,7 @@ function RecipesPage({ forceOpenDialog }) {
                           />
                         </Box>
                       )}
-                      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
+                      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2, minHeight: 0, overflow: 'visible' }}>
                         <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, fontSize: 18, minHeight: 48, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.recipe_title}</Typography>
                         <Box sx={{ mt: 0.5, mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                           {r.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {r.course}</Typography>}
