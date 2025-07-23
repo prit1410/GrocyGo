@@ -260,24 +260,46 @@ function RecipesPage({ forceOpenDialog }) {
                   missing = ingredientsArr.filter(ing => !invNames.includes(ing.toLowerCase()));
                 }
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={i}>
-                    <Card sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        <Typography variant="h6" sx={{ mb: 1 }}>{r.recipe_title}</Typography>
-                        {r.recipe_image && (
-                          <Box sx={{ mb: 2, textAlign: 'center' }}>
-                            <img
-                              src={r.recipe_image}
-                              alt={r.recipe_title}
-                              style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
-                              onError={e => { e.target.style.display = 'none'; }}
-                            />
-                          </Box>
-                        )}
-                        {/* Show course and diet if present */}
-                        <Box sx={{ mt: 1, mb: 1 }}>
-                          {r.course && <Typography variant="caption" color="primary" sx={{ mr: 2 }}>Course: {r.course}</Typography>}
-                          {r.diet && <Typography variant="caption" color="secondary">Diet: {r.diet}</Typography>}
+                  <Grid item xs={12} sm={6} md={4} key={i} sx={{ display: 'flex' }}>
+                    <Card sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      width: '100%',
+                      minWidth: 0,
+                      height: 420,
+                      minHeight: 420,
+                      maxHeight: 420,
+                      borderRadius: 3,
+                      boxShadow: 2,
+                      overflow: 'hidden',
+                      position: 'relative',
+                      background: '#fff',
+                    }}>
+                      {r.recipe_image && (
+                        <Box sx={{
+                          width: '100%',
+                          aspectRatio: '1/1',
+                          background: '#f8f8f8',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderBottom: '1px solid #eee',
+                          flexShrink: 0,
+                          overflow: 'hidden',
+                        }}>
+                          <img
+                            src={r.recipe_image}
+                            alt={r.recipe_title}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 0, display: 'block', aspectRatio: '1/1' }}
+                            onError={e => { e.target.style.display = 'none'; }}
+                          />
+                        </Box>
+                      )}
+                      <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2, minHeight: 0, overflow: 'hidden' }}>
+                        <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, fontSize: 18, minHeight: 48, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.recipe_title}</Typography>
+                        <Box sx={{ mt: 0.5, mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          {r.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {r.course}</Typography>}
+                          {r.diet && <Typography variant="caption" color="secondary" sx={{ fontWeight: 600, bgcolor: '#fce4ec', px: 1, borderRadius: 1 }}>Diet: {r.diet}</Typography>}
                         </Box>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                           <b>Prep time:</b> {r.prep_time}
@@ -285,34 +307,34 @@ function RecipesPage({ forceOpenDialog }) {
                         {r.ingredients && (
                           <Box sx={{ mb: 1 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Ingredients:</Typography>
-                            <ul style={{ margin: 0, paddingLeft: 18 }}>
+                            <ul style={{ margin: 0, paddingLeft: 18, maxHeight: 60, overflow: 'auto' }}>
                               {r.ingredients.split('|').map((ing, idx) => (
-                                <li key={idx}>{ing.trim()}</li>
+                                <li key={idx} style={{ fontSize: 14 }}>{ing.trim()}</li>
                               ))}
                             </ul>
                           </Box>
                         )}
-                        <Box sx={{ mb: 1 }}>
+                        <Box sx={{ mb: 1, minHeight: 70, maxHeight: 90, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', overflow: 'hidden' }}>
                           <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', display: 'flex', alignItems: 'center' }}>
                             <span role="img" aria-label="check" style={{ marginRight: 4 }}>✔️</span>
                             You have ({matched.length}):
                           </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, mb: 1 }}>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, mb: 1, maxHeight: 28, overflow: 'auto' }}>
                             {matched.length === 0 ? (
                               <Typography variant="body2" color="text.secondary">None</Typography>
                             ) : matched.map((ing, idx) => (
-                              <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 13 }}>{ing}</Box>
+                              <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 13, whiteSpace: 'nowrap' }}>{ing}</Box>
                             ))}
                           </Box>
                           <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main', display: 'flex', alignItems: 'center' }}>
                             <span role="img" aria-label="cross" style={{ marginRight: 4 }}>❌</span>
                             Need to buy ({missing.length}):
                           </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, mb: 1 }}>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, mb: 1, maxHeight: 28, overflow: 'auto' }}>
                             {missing.length === 0 ? (
                               <Typography variant="body2" color="text.secondary">None</Typography>
                             ) : missing.map((ing, idx) => (
-                              <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 13 }}>{ing}</Box>
+                              <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 13, whiteSpace: 'nowrap' }}>{ing}</Box>
                             ))}
                           </Box>
                         </Box>
@@ -322,7 +344,7 @@ function RecipesPage({ forceOpenDialog }) {
                           variant="outlined"
                           color="primary"
                           fullWidth
-                          sx={{ mt: 1 }}
+                          sx={{ mt: 1, fontWeight: 600, fontSize: 16, borderRadius: 2 }}
                           onClick={() => handleSaveToMyRecipes(r)}
                         >
                           Save to My Recipes
