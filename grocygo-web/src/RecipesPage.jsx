@@ -272,7 +272,7 @@ function RecipesPage({ forceOpenDialog }) {
                       {/* Image at top, fixed height, always full width */}
                       <Box sx={{
                         width: '100%',
-                        height: { xs: 180, sm: 200, md: 220 },
+                        aspectRatio: '1/1',
                         background: '#f8f8f8',
                         display: 'flex',
                         alignItems: 'center',
@@ -280,12 +280,14 @@ function RecipesPage({ forceOpenDialog }) {
                         borderBottom: '1px solid #eee',
                         flexShrink: 0,
                         overflow: 'hidden',
+                        minHeight: 0,
+                        maxHeight: 340,
                       }}>
                         {r.recipe_image ? (
                           <img
                             src={r.recipe_image}
                             alt={r.recipe_title}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 0, display: 'block' }}
+                            style={{ width: '100%', height: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: 0, display: 'block' }}
                             onError={e => { e.target.style.display = 'none'; }}
                           />
                         ) : (
