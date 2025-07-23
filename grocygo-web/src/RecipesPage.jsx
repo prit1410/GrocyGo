@@ -247,11 +247,8 @@ function RecipesPage({ forceOpenDialog }) {
             <Grid
               container
               spacing={2}
-              sx={{
-                justifyContent: { xs: 'flex-start', md: 'space-evenly' },
-                alignItems: 'stretch',
-                alignContent: 'stretch',
-              }}
+              columns={3}
+              alignItems="stretch"
             >
               {safeRecipes.map((r, i) => {
                 // Parse ingredients string to array
@@ -268,7 +265,12 @@ function RecipesPage({ forceOpenDialog }) {
                   missing = ingredientsArr.filter(ing => !invNames.includes(ing.toLowerCase()));
                 }
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={i} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'stretch' }}>
+                  <Grid
+                    item
+                    xs={1}
+                    key={i}
+                    sx={{ display: 'flex', justifyContent: 'center', alignItems: 'stretch' }}
+                  >
                     <Card sx={{
                       display: 'flex',
                       flexDirection: 'column',
