@@ -260,10 +260,13 @@ function RecipesPage({ forceOpenDialog }) {
                   missing = ingredientsArr.filter(ing => !invNames.includes(ing.toLowerCase()));
                 }
                 return (
-                  <Grid item xs={12} sm={6} md={4} key={i}>
+                  <Grid item xs={12} sm={6} md={4} key={i} sx={{ display: 'flex', justifyContent: 'center' }}>
                     <Card sx={{
                       display: 'flex',
                       flexDirection: 'column',
+                      width: 320,
+                      maxWidth: 320,
+                      minWidth: 260,
                       borderRadius: 3,
                       boxShadow: 2,
                       overflow: 'hidden',
