@@ -264,18 +264,15 @@ function RecipesPage({ forceOpenDialog }) {
                     <Card sx={{
                       display: 'flex',
                       flexDirection: 'column',
-                      height: 440,
-                      minHeight: 440,
-                      maxHeight: 440,
                       borderRadius: 3,
                       boxShadow: 2,
                       overflow: 'hidden',
                       background: '#fff',
                     }}>
-                      {/* Image at top, always square */}
+                      {/* Image at top, fixed height, always full width */}
                       <Box sx={{
                         width: '100%',
-                        aspectRatio: '1/1',
+                        height: { xs: 180, sm: 200, md: 220 },
                         background: '#f8f8f8',
                         display: 'flex',
                         alignItems: 'center',
@@ -295,8 +292,8 @@ function RecipesPage({ forceOpenDialog }) {
                           <Box sx={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#bbb', fontSize: 32 }}>No Image</Box>
                         )}
                       </Box>
-                      {/* Details below image, scrollable if needed */}
-                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minHeight: 0, overflow: 'auto' }}>
+                      {/* Details below image, natural height */}
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
                         <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.recipe_title}</Typography>
                         <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                           {r.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {r.course}</Typography>}
@@ -308,7 +305,7 @@ function RecipesPage({ forceOpenDialog }) {
                         {r.ingredients && (
                           <Box sx={{ mb: 1 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>Ingredients:</Typography>
-                            <ul style={{ margin: 0, paddingLeft: 18, maxHeight: 48, overflow: 'auto' }}>
+                            <ul style={{ margin: 0, paddingLeft: 18 }}>
                               {r.ingredients.split('|').map((ing, idx) => (
                                 <li key={idx} style={{ fontSize: 13 }}>{ing.trim()}</li>
                               ))}
@@ -320,7 +317,7 @@ function RecipesPage({ forceOpenDialog }) {
                             <span role="img" aria-label="check" style={{ marginRight: 4 }}>✔️</span>
                             You have ({matched.length}):
                           </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, mb: 1, maxHeight: 24, overflow: 'auto' }}>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, mb: 1 }}>
                             {matched.length === 0 ? (
                               <Typography variant="body2" color="text.secondary">None</Typography>
                             ) : matched.map((ing, idx) => (
@@ -331,7 +328,7 @@ function RecipesPage({ forceOpenDialog }) {
                             <span role="img" aria-label="cross" style={{ marginRight: 4 }}>❌</span>
                             Need to buy ({missing.length}):
                           </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, mb: 1, maxHeight: 24, overflow: 'auto' }}>
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5, mb: 1 }}>
                             {missing.length === 0 ? (
                               <Typography variant="body2" color="text.secondary">None</Typography>
                             ) : missing.map((ing, idx) => (
