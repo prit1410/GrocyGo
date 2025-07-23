@@ -279,7 +279,7 @@ function RecipesPage({ forceOpenDialog }) {
                     <Box
                       sx={{
                         width: 140,
-                        minWidth: 140,
+                        minWidth: 200,
                         height: '100%',
                         background: '#f8f8f8',
                         display: 'flex',
