@@ -279,7 +279,6 @@ function RecipesPage({ forceOpenDialog }) {
                       boxShadow: 2,
                       overflow: 'hidden',
                       background: '#fff',
-                      height: { xs: 540, md: 540 }, // Fixed height for all cards
                     }}>
                       {/* Image at top, fixed height, always full width */}
                       <Box sx={{
@@ -307,7 +306,7 @@ function RecipesPage({ forceOpenDialog }) {
                         )}
                       </Box>
                       {/* Details below image, natural height */}
-                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, pb: 0, minHeight: 0, overflow: 'hidden' }}>
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, pb: 0, minHeight: 0 }}>
                         <Typography variant="h6" sx={{ mb: 1, fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.recipe_title}</Typography>
                         <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                           {r.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {r.course}</Typography>}
