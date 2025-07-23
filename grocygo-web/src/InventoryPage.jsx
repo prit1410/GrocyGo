@@ -19,6 +19,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ScanIcon from '@mui/icons-material/QrCodeScanner';
 import KeyboardVoiceIcon from '@mui/icons-material/KeyboardVoice';
 import { useNavigate } from 'react-router-dom';
+import { Player } from '@lottiefiles/react-lottie-player';
 
 const COLORS = ['#4caf50', '#ff9800', '#2196f3', '#f44336', '#9c27b0', '#ffeb3b'];
 const units = ['pieces', 'kg', 'bag', 'packet', 'box', 'containers', 'lbs', 'loaf'];
@@ -188,49 +189,78 @@ export default function InventoryPage() {
         />
       </Box>
 
-      {loading ? (
-        <Box sx={{ textAlign: 'center', color: '#888', my: 6, fontSize: 18 }}>Loading...</Box>
-      ) : (
-        <Grid container spacing={2}>
-          {filteredItems.map(item => (
-            <Grid item xs={12} sm={6} md={4} key={item.id}>
-              <Card sx={{ height: '100%' }}>
-                <CardContent>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Typography variant="h6">{item.name}</Typography>
+      {/* Excel-like Table */}
+      <Box sx={{ width: '100%', overflowX: 'auto', mb: 4 }}>
+        <Box
+          component="table"
+          sx={{
+            width: '100%',
+            borderCollapse: 'collapse',
+            minWidth: 600,
+            background: '#fff',
+            boxShadow: 1,
+            borderRadius: 2,
+            overflow: 'hidden',
+          }}
+        >
+          <Box component="thead" sx={{ background: '#f5f5f5' }}>
+            <Box component="tr">
+              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'left' }}>Name</Box>
+              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'left' }}>Quantity</Box>
+              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'left' }}>Unit</Box>
+              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'left' }}>Location</Box>
+              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'left' }}>Expiry</Box>
+              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'center' }}>Action</Box>
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {loading ? (
+              <Box component="tr">
+                <Box component="td" colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
+                  {/* Lottie animation for loading */}
+                  <Player
+                    autoplay
+                    loop
+                    src="/loading/GlowLoading.json" // <-- use JSON file, not .lottie
+                    style={{ height: 120, width: 120, margin: '0 auto' }}
+                  />
+                </Box>
+              </Box>
+            ) : (
+              filteredItems.map(item => (
+                <Box component="tr" key={item.id} sx={{ borderBottom: '1px solid #eee', '&:hover': { background: '#fafafa' } }}>
+                  <Box component="td" sx={{ px: 2, py: 1 }}>{item.name}</Box>
+                  <Box component="td" sx={{ px: 2, py: 1 }}>{item.quantity}</Box>
+                  <Box component="td" sx={{ px: 2, py: 1 }}>{item.unit}</Box>
+                  <Box component="td" sx={{ px: 2, py: 1 }}>{item.location}</Box>
+                  <Box component="td" sx={{ px: 2, py: 1 }}>
+                    {item.expiryDate && (
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: getExpiryStatus(item.expiryDate).color,
+                          bgcolor: `${getExpiryStatus(item.expiryDate).color}22`,
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          display: 'inline-block'
+                        }}
+                      >
+                        {getExpiryStatus(item.expiryDate).text}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box component="td" sx={{ px: 2, py: 1, textAlign: 'center' }}>
                     <IconButton onClick={() => handleDelete(item.id)} size="small">
                       <DeleteIcon />
                     </IconButton>
                   </Box>
-                  <Typography color="text.secondary">
-                    {item.quantity} {item.unit}
-                  </Typography>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                    <LocationOnIcon fontSize="small" sx={{ mr: 0.5 }} />
-                    <Typography variant="body2">{item.location}</Typography>
-                  </Box>
-                  {item.expiryDate && (
-                    <Typography 
-                      variant="body2" 
-                      sx={{ 
-                        mt: 1,
-                        color: getExpiryStatus(item.expiryDate).color,
-                        bgcolor: `${getExpiryStatus(item.expiryDate).color}22`,
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 1,
-                        display: 'inline-block'
-                      }}
-                    >
-                      {getExpiryStatus(item.expiryDate).text}
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      )}
+                </Box>
+              ))
+            )}
+          </Box>
+        </Box>
+      </Box>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add New Item</DialogTitle>
