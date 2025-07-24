@@ -59,6 +59,26 @@ exports.remove = async (req, res) => {
   }
 };
 
+// AI meal suggestions based on inventory (calls Node.js AI endpoint)
+const axios = require('axios');
+exports.getSuggestions = async (req, res) => {
+  try {
+    // Get user's inventory
+    const userId = req.user.uid;
+    const invSnap = await db.collection('user').doc(userId).collection('inventory').get();
+    const inventory = invSnap.docs.map(doc => doc.data().name || '').filter(Boolean);
+    // Forward diet and course if provided
+    const { diet = '', course = '' } = req.body || {};
+    // Call local Node.js AI endpoint
+    const aiRes = await axios.post('http://localhost:8080/api/ai/mealplan-suggestions', { inventory, diet, course });
+    // Directly return AI response
+    res.json(aiRes.data);
+  } catch (err) {
+    console.error('mealplan AI suggestion error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 /**
  * Use ingredients: subtracts quantities from inventory for matching items.
  * Expects req.body to be an array of { name, quantity, unit }
@@ -67,8 +87,7 @@ exports.useIngredients = async (req, res) => {
   try {
     const userId = req.user.uid;
     if (!userId) throw new Error('User not authenticated');
-    const usageList = Array.isArray(req.body.ingredients) ? req.body.ingredients : (Array.isArray(req.body) ? req.body : []);
-    const planId = req.body.planId ? String(req.body.planId) : null;
+    const usageList = Array.isArray(req.body) ? req.body : [];
     if (!usageList.length) return res.status(400).json({ error: 'No ingredients provided' });
 
     // Get all inventory items for user
@@ -89,29 +108,18 @@ exports.useIngredients = async (req, res) => {
       const invItem = inventory[name];
       if (!invItem) continue; // Not in inventory, skip
 
-      // Parse inventory quantity as number
-      const invQty = parseFloat(invItem.quantity) || 0;
-      const newQty = Math.max(0, invQty - qty);
+      // Only update if units match or you want to allow cross-unit subtraction
+      // Here, we just subtract if name matches, regardless of unit
+      const newQty = Math.max(0, (parseFloat(invItem.quantity) || 0) - qty);
 
-      // Update Firestore with numeric value
+      // Update Firestore
       await db.collection('user').doc(userId).collection('inventory').doc(invItem._id).update({
         quantity: newQty
       });
-      updated.push({ name: invItem.name, oldQuantity: invQty, used: qty, newQuantity: newQty });
+      updated.push({ name: invItem.name, oldQuantity: invItem.quantity, used: qty, newQuantity: newQty });
     }
 
-    // If planId is provided, delete the meal plan document
-    let deletedPlan = null;
-    if (planId) {
-      const planRef = db.collection('user').doc(userId).collection('mealPlans').doc(planId);
-      const planDoc = await planRef.get();
-      if (planDoc.exists) {
-        deletedPlan = { id: planDoc.id, ...planDoc.data() };
-        await planRef.delete();
-      }
-    }
-
-    res.json({ updated, deletedPlan });
+    res.json({ updated });
   } catch (err) {
     console.error('useIngredients error:', err);
     res.status(500).json({ error: err.message });
