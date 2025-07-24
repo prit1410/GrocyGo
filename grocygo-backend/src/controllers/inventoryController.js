@@ -64,7 +64,17 @@ exports.useIngredients = async (req, res) => {
   try {
     const userId = req.user.uid;
     if (!userId) throw new Error('User not authenticated');
-    const { usedIngredients } = req.body; // [{ name, quantity, unit }]
+    // Accept both { usedIngredients: [...] } and direct array (for backward compatibility)
+    let usedIngredients = [];
+    if (Array.isArray(req.body.usedIngredients)) {
+      usedIngredients = req.body.usedIngredients;
+    } else if (Array.isArray(req.body.ingredients)) {
+      usedIngredients = req.body.ingredients;
+    } else if (Array.isArray(req.body)) {
+      usedIngredients = req.body;
+    }
+    if (!usedIngredients.length) return res.status(400).json({ error: 'No ingredients provided' });
+
     const invRef = db.collection('user').doc(userId).collection('inventory');
     const batch = db.batch();
 
@@ -73,8 +83,9 @@ exports.useIngredients = async (req, res) => {
       const snapshot = await invRef.where('name', '==', used.name).get();
       snapshot.forEach(doc => {
         const data = doc.data();
-        let newQty = (data.quantity || 0) - (used.quantity || 0);
+        let newQty = (parseFloat(data.quantity) || 0) - (parseFloat(used.quantity) || 0);
         if (newQty < 0) newQty = 0;
+        newQty = Number(newQty.toFixed(2));
         batch.update(doc.ref, { quantity: newQty });
       });
     }
