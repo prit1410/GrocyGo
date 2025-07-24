@@ -184,11 +184,12 @@ export default function MealPlansPage() {
 
   // After ingredient usage confirm
   const handleConfirmIngredients = async (rows) => {
-    // Call backend to update inventory
     try {
-      // You should implement useIngredients in your api.js
       if (rows && rows.length > 0) {
-        await import('./api').then(api => api.useIngredients(rows));
+        await import('./api').then(api =>
+          api.useIngredients({ ingredients: rows, planId: ingredientDialog.plan?.id })
+        );
+        await fetchPlans(false); // Refresh plans after deletion
       }
       setCompletedMeals(cm => ({ ...cm, [ingredientDialog.plan.id]: true }));
     } catch (e) {
