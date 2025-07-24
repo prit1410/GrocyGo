@@ -59,26 +59,6 @@ exports.remove = async (req, res) => {
   }
 };
 
-// AI meal suggestions based on inventory (calls Node.js AI endpoint)
-const axios = require('axios');
-exports.getSuggestions = async (req, res) => {
-  try {
-    // Get user's inventory
-    const userId = req.user.uid;
-    const invSnap = await db.collection('user').doc(userId).collection('inventory').get();
-    const inventory = invSnap.docs.map(doc => doc.data().name || '').filter(Boolean);
-    // Forward diet and course if provided
-    const { diet = '', course = '' } = req.body || {};
-    // Call local Node.js AI endpoint
-    const aiRes = await axios.post('http://localhost:8080/api/ai/mealplan-suggestions', { inventory, diet, course });
-    // Directly return AI response
-    res.json(aiRes.data);
-  } catch (err) {
-    console.error('mealplan AI suggestion error:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
 /**
  * Use ingredients: subtracts quantities from inventory for matching items.
  * Expects req.body to be an array of { name, quantity, unit }
@@ -119,9 +99,9 @@ exports.useIngredients = async (req, res) => {
       // Subtract and round to 2 decimals to avoid floating point issues
       let newQty = invQty - qty;
       if (newQty < 0) newQty = 0;
-      newQty = Math.round(newQty * 100) / 100;
+      newQty = Number(newQty.toFixed(2)); // Ensure number type and 2 decimals
 
-      // Update Firestore with numeric value
+      // Update Firestore with numeric value (force type)
       await db.collection('user').doc(userId).collection('inventory').doc(invItem._id).update({
         quantity: newQty
       });
