@@ -59,26 +59,6 @@ exports.remove = async (req, res) => {
   }
 };
 
-// AI meal suggestions based on inventory (calls Node.js AI endpoint)
-const axios = require('axios');
-exports.getSuggestions = async (req, res) => {
-  try {
-    // Get user's inventory
-    const userId = req.user.uid;
-    const invSnap = await db.collection('user').doc(userId).collection('inventory').get();
-    const inventory = invSnap.docs.map(doc => doc.data().name || '').filter(Boolean);
-    // Forward diet and course if provided
-    const { diet = '', course = '' } = req.body || {};
-    // Call local Node.js AI endpoint
-    const aiRes = await axios.post('http://localhost:8080/api/ai/mealplan-suggestions', { inventory, diet, course });
-    // Directly return AI response
-    res.json(aiRes.data);
-  } catch (err) {
-    console.error('mealplan AI suggestion error:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
 /**
  * Use ingredients: subtracts quantities from inventory for matching items.
  * Expects req.body to be an array of { name, quantity, unit }
