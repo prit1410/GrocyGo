@@ -79,15 +79,31 @@ exports.useIngredients = async (req, res) => {
     const batch = db.batch();
 
     for (const used of usedIngredients) {
-      // Find inventory item by name (case-insensitive)
-      const snapshot = await invRef.where('name', '==', used.name).get();
-      snapshot.forEach(doc => {
+      // Find inventory item by name (case-insensitive, ignore whitespace)
+      const usedName = (used.name || '').trim().toLowerCase();
+      if (!usedName) continue;
+      // Get all inventory docs and match by name (case-insensitive, ignore whitespace)
+      const invSnap = await invRef.get();
+      let matchedDoc = null;
+      let matchedData = null;
+      invSnap.forEach(doc => {
         const data = doc.data();
-        let newQty = (parseFloat(data.quantity) || 0) - (parseFloat(used.quantity) || 0);
-        if (newQty < 0) newQty = 0;
-        newQty = Number(newQty.toFixed(2));
-        batch.update(doc.ref, { quantity: newQty });
+        if ((data.name || '').trim().toLowerCase() === usedName) {
+          matchedDoc = doc;
+          matchedData = data;
+        }
       });
+      if (!matchedDoc) continue;
+      // Only subtract if units match (optional: remove this check if you want to allow cross-unit subtraction)
+      // if (used.unit && matchedData.unit && used.unit !== matchedData.unit) continue;
+      let invQty = parseFloat(matchedData.quantity);
+      let usedQty = parseFloat(used.quantity);
+      if (isNaN(invQty)) invQty = 0;
+      if (isNaN(usedQty)) usedQty = 0;
+      let newQty = invQty - usedQty;
+      if (newQty < 0) newQty = 0;
+      newQty = Number(newQty.toFixed(2));
+      batch.update(matchedDoc.ref, { quantity: newQty });
     }
     await batch.commit();
     res.json({ success: true });
