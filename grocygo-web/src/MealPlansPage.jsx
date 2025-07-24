@@ -189,9 +189,9 @@ export default function MealPlansPage() {
         await import('./api').then(api =>
           api.useIngredients({ ingredients: rows, planId: ingredientDialog.plan?.id })
         );
-        await fetchPlans(false); // Refresh plans after deletion
+        await fetchPlans(false); // Always refresh plans after ingredient usage
       }
-      setCompletedMeals(cm => ({ ...cm, [ingredientDialog.plan.id]: true }));
+      setCompletedMeals(cm => ({ ...cm, [ingredientDialog.plan?.id]: true }));
     } catch (e) {
       alert('Failed to update inventory: ' + (e.message || e));
     }
