@@ -92,12 +92,14 @@ exports.useIngredients = async (req, res) => {
     const planId = req.body.planId ? String(req.body.planId) : null;
     if (!usageList.length) return res.status(400).json({ error: 'No ingredients provided' });
 
-    // Get all inventory items for user
+    // Get all inventory items for user and map by lowercased name
     const invSnap = await db.collection('user').doc(userId).collection('inventory').get();
     const inventory = {};
     invSnap.docs.forEach(doc => {
       const data = doc.data();
-      if (data.name) inventory[data.name.trim().toLowerCase()] = { ...data, _id: doc.id };
+      if (data.name) {
+        inventory[data.name.trim().toLowerCase()] = { ...data, _id: doc.id };
+      }
     });
 
     // Track updates
@@ -110,13 +112,14 @@ exports.useIngredients = async (req, res) => {
       const invItem = inventory[name];
       if (!invItem) continue; // Not in inventory, skip
 
-      // Parse inventory quantity as number (default to 0 if missing or invalid)
-      let invQty = typeof invItem.quantity === 'number'
-        ? invItem.quantity
-        : parseFloat(invItem.quantity);
+      // Always parse inventory quantity as float, fallback to 0 if invalid
+      let invQty = Number(invItem.quantity);
       if (isNaN(invQty)) invQty = 0;
 
-      const newQty = Math.max(0, invQty - qty);
+      // Subtract and round to 2 decimals to avoid floating point issues
+      let newQty = invQty - qty;
+      if (newQty < 0) newQty = 0;
+      newQty = Math.round(newQty * 100) / 100;
 
       // Update Firestore with numeric value
       await db.collection('user').doc(userId).collection('inventory').doc(invItem._id).update({
