@@ -68,7 +68,7 @@ exports.useIngredients = async (req, res) => {
     const userId = req.user.uid;
     if (!userId) throw new Error('User not authenticated');
     const usageList = Array.isArray(req.body.ingredients) ? req.body.ingredients : (Array.isArray(req.body) ? req.body : []);
-    const planId = req.body.planId || null;
+    const planId = req.body.planId ? String(req.body.planId) : null;
     if (!usageList.length) return res.status(400).json({ error: 'No ingredients provided' });
 
     // Get all inventory items for user
@@ -89,13 +89,15 @@ exports.useIngredients = async (req, res) => {
       const invItem = inventory[name];
       if (!invItem) continue; // Not in inventory, skip
 
-      const newQty = Math.max(0, (parseFloat(invItem.quantity) || 0) - qty);
+      // Parse inventory quantity as number
+      const invQty = parseFloat(invItem.quantity) || 0;
+      const newQty = Math.max(0, invQty - qty);
 
-      // Update Firestore
+      // Update Firestore with numeric value
       await db.collection('user').doc(userId).collection('inventory').doc(invItem._id).update({
         quantity: newQty
       });
-      updated.push({ name: invItem.name, oldQuantity: invItem.quantity, used: qty, newQuantity: newQty });
+      updated.push({ name: invItem.name, oldQuantity: invQty, used: qty, newQuantity: newQty });
     }
 
     // If planId is provided, delete the meal plan document
