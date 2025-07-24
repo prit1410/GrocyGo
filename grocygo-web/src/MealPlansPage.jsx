@@ -45,6 +45,7 @@ export default function MealPlansPage() {
   const [ingredientDialog, setIngredientDialog] = useState({ open: false, plan: null, ingredients: [] });
   const [completedMeals, setCompletedMeals] = useState({}); // { planId: true }
   const [selectedDiet, setSelectedDiet] = useState('');
+  const [deletingPlanId, setDeletingPlanId] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const firstLoad = useRef(true);
@@ -68,8 +69,8 @@ export default function MealPlansPage() {
     setRecipes(res.data);
   };
 
-  const fetchPlans = async () => {
-    setLoading(true);
+  const fetchPlans = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const res = await getMealPlans();
       // Transform to { Monday: { Breakfast: {...}, ... }, ... }
@@ -84,7 +85,7 @@ export default function MealPlansPage() {
       });
       setPlans(week);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -127,8 +128,10 @@ export default function MealPlansPage() {
   };
 
   const handleDeleteMeal = async (planId) => {
+    setDeletingPlanId(planId);
     await deleteMealPlan(planId);
-    fetchPlans();
+    await fetchPlans(false); // Don't show global loading spinner
+    setDeletingPlanId(null);
   };
 
   // Helper: check if meal is in the past (older than now)
@@ -240,7 +243,7 @@ export default function MealPlansPage() {
                 cursor: loading ? 'not-allowed' : 'pointer',
                 marginLeft: 12
               }}
-              onClick={fetchPlans}
+              onClick={() => fetchPlans(true)}
               disabled={loading}
             >
               {loading ? 'Refreshing...' : 'Refresh'}
@@ -279,11 +282,18 @@ export default function MealPlansPage() {
                           <div style={{ fontSize: 12, color: '#888' }}>{plan.time || (slot === 'Breakfast' ? '8:00 AM' : slot === 'Lunch' ? '12:30 PM' : '7:00 PM')}</div>
                           <button
                             style={{
-                              position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#d44', cursor: 'pointer'
+                              position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#d44', cursor: deletingPlanId === plan.id ? 'not-allowed' : 'pointer'
                             }}
                             onClick={() => handleDeleteMeal(plan.id)}
+                            disabled={deletingPlanId === plan.id}
                             title="Delete"
-                          >✕</button>
+                          >
+                            {deletingPlanId === plan.id ? (
+                              <span style={{ fontSize: 14 }}>Deleting...</span>
+                            ) : (
+                              '✕'
+                            )}
+                          </button>
                           {/* Show completed status or "Completed" button if in the past */}
                           {isPast && !isCompleted && (
                             <button

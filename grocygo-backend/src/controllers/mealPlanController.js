@@ -78,3 +78,50 @@ exports.getSuggestions = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+/**
+ * Use ingredients: subtracts quantities from inventory for matching items.
+ * Expects req.body to be an array of { name, quantity, unit }
+ */
+exports.useIngredients = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    if (!userId) throw new Error('User not authenticated');
+    const usageList = Array.isArray(req.body) ? req.body : [];
+    if (!usageList.length) return res.status(400).json({ error: 'No ingredients provided' });
+
+    // Get all inventory items for user
+    const invSnap = await db.collection('user').doc(userId).collection('inventory').get();
+    const inventory = {};
+    invSnap.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.name) inventory[data.name.trim().toLowerCase()] = { ...data, _id: doc.id };
+    });
+
+    // Track updates
+    const updated = [];
+
+    for (const usage of usageList) {
+      const name = (usage.name || '').trim().toLowerCase();
+      const qty = parseFloat(usage.quantity);
+      if (!name || isNaN(qty) || qty <= 0) continue;
+      const invItem = inventory[name];
+      if (!invItem) continue; // Not in inventory, skip
+
+      // Only update if units match or you want to allow cross-unit subtraction
+      // Here, we just subtract if name matches, regardless of unit
+      const newQty = Math.max(0, (parseFloat(invItem.quantity) || 0) - qty);
+
+      // Update Firestore
+      await db.collection('user').doc(userId).collection('inventory').doc(invItem._id).update({
+        quantity: newQty
+      });
+      updated.push({ name: invItem.name, oldQuantity: invItem.quantity, used: qty, newQuantity: newQty });
+    }
+
+    res.json({ updated });
+  } catch (err) {
+    console.error('useIngredients error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
