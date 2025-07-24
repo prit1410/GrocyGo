@@ -87,7 +87,8 @@ exports.useIngredients = async (req, res) => {
   try {
     const userId = req.user.uid;
     if (!userId) throw new Error('User not authenticated');
-    const usageList = Array.isArray(req.body) ? req.body : [];
+    const usageList = Array.isArray(req.body.ingredients) ? req.body.ingredients : (Array.isArray(req.body) ? req.body : []);
+    const planId = req.body.planId || null;
     if (!usageList.length) return res.status(400).json({ error: 'No ingredients provided' });
 
     // Get all inventory items for user
@@ -108,8 +109,6 @@ exports.useIngredients = async (req, res) => {
       const invItem = inventory[name];
       if (!invItem) continue; // Not in inventory, skip
 
-      // Only update if units match or you want to allow cross-unit subtraction
-      // Here, we just subtract if name matches, regardless of unit
       const newQty = Math.max(0, (parseFloat(invItem.quantity) || 0) - qty);
 
       // Update Firestore
@@ -119,7 +118,18 @@ exports.useIngredients = async (req, res) => {
       updated.push({ name: invItem.name, oldQuantity: invItem.quantity, used: qty, newQuantity: newQty });
     }
 
-    res.json({ updated });
+    // If planId is provided, delete the meal plan document
+    let deletedPlan = null;
+    if (planId) {
+      const planRef = db.collection('user').doc(userId).collection('mealPlans').doc(planId);
+      const planDoc = await planRef.get();
+      if (planDoc.exists) {
+        deletedPlan = { id: planDoc.id, ...planDoc.data() };
+        await planRef.delete();
+      }
+    }
+
+    res.json({ updated, deletedPlan });
   } catch (err) {
     console.error('useIngredients error:', err);
     res.status(500).json({ error: err.message });
