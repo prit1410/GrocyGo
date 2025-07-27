@@ -4,6 +4,16 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 const app = express();
+
+// CORS middleware at the very top
+app.use(cors({
+  origin: [
+    process.env.FRONTEND_URL || 'https://grocy-go-web.vercel.app',
+    'http://localhost:3000'
+  ],
+  credentials: true
+}));
+
 const apiKeyMiddleware = require('./middleware/apiKey');
 
 // Health check route (public, no API key required)
@@ -39,13 +49,6 @@ app.use(limiter);
 app.disable('x-powered-by');
 
 app.use(express.json());
-app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'https://grocy-go-web.vercel.app',
-    'http://localhost:3000'
-  ],
-  credentials: true
-}));
 
 // Health check route
 app.get('/api/health', (req, res) => {
