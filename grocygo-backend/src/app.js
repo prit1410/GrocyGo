@@ -5,7 +5,13 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 const app = express();
 const apiKeyMiddleware = require('./middleware/apiKey');
-// API Key authentication for all API routes
+
+// Health check route (public, no API key required)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'GrocyGo backend is running!' });
+});
+
+// API Key authentication for all other API routes
 app.use('/api', apiKeyMiddleware);
 const inventoryRoutes = require('./routes/inventory');
 const recipesRoutes = require('./routes/recipes');
