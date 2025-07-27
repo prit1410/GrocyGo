@@ -1,12 +1,12 @@
-const apiKeyMiddleware = require('./middleware/apiKey');
-// API Key authentication for all API routes
-app.use('/api', apiKeyMiddleware);
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 const app = express();
+const apiKeyMiddleware = require('./middleware/apiKey');
+// API Key authentication for all API routes
+app.use('/api', apiKeyMiddleware);
 const inventoryRoutes = require('./routes/inventory');
 const recipesRoutes = require('./routes/recipes');
 const mealPlansRoutes = require('./routes/mealPlans');
