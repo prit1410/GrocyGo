@@ -13,7 +13,7 @@ const aiRoutes = require('./routes/ai');
 app.use(express.json());
 app.use(cors({
   origin: [
-    'https://grocy-go.vercel.app',
+    'https://grocy-go.web.vercel.app',
     'http://localhost:3000'
   ],
   credentials: true
