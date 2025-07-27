@@ -1,5 +1,11 @@
+const apiKeyMiddleware = require('./middleware/apiKey');
+// API Key authentication for all API routes
+app.use('/api', apiKeyMiddleware);
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+require('dotenv').config();
 const app = express();
 const inventoryRoutes = require('./routes/inventory');
 const recipesRoutes = require('./routes/recipes');
@@ -10,10 +16,26 @@ const notificationsRoutes = require('./routes/notifications');
 const analyticsRoutes = require('./routes/analytics');
 const aiRoutes = require('./routes/ai');
 
+
+// Security HTTP headers
+app.use(helmet());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(limiter);
+
+// Hide x-powered-by
+app.disable('x-powered-by');
+
 app.use(express.json());
 app.use(cors({
   origin: [
-    'https://grocy-go-web.vercel.app',
+    process.env.FRONTEND_URL || 'https://grocy-go-web.vercel.app',
     'http://localhost:3000'
   ],
   credentials: true
