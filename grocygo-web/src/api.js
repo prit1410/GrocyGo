@@ -1,7 +1,17 @@
+
+import axios from 'axios';
+import { auth } from './firebase';
+
+const API_BASE = 'https://grocygo.onrender.com/api';
+// Store your API key here (replace with your actual key or use env variable in production)
+const API_KEY = process.env.x_api_key;
+
 // AI Suggested Recipes API (returns matched/missing ingredients)
 export const getSuggestedRecipes = async (ingredients, course = '', diet = '') => {
   // ingredients: array of strings
-  const res = await axios.post('https://grocygo.onrender.com/api/ai/recipe-suggestions', { ingredients, course, diet });
+  const res = await axios.post('https://grocygo.onrender.com/api/ai/recipe-suggestions', { ingredients, course, diet }, {
+    headers: { 'x-api-key': API_KEY }
+  });
   // The Node.js backend returns an array directly, not { suggestions: [...] }
   return Array.isArray(res.data) ? res.data : [];
 };
@@ -9,40 +19,37 @@ export const getSuggestedRecipes = async (ingredients, course = '', diet = '') =
 export const getSuggestions = async (q = '') => {
   // No auth required
   return axios.get(`${API_BASE}/inventory/suggestions`, {
-    params: { q }
+    params: { q },
+    headers: { 'x-api-key': API_KEY }
   });
 };
-import axios from 'axios';
-import { auth } from './firebase';
-
-const API_BASE = 'https://grocygo.onrender.com/api';
 
 
 export const getInventory = async () => {
   const token = await auth.currentUser?.getIdToken();
   return axios.get(`${API_BASE}/inventory`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const addInventory = async (item) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.post(`${API_BASE}/inventory`, item, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const updateInventory = async (id, item) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.put(`${API_BASE}/inventory/${id}`, item, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const deleteInventory = async (id) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.delete(`${API_BASE}/inventory/${id}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
@@ -50,7 +57,7 @@ export const deleteInventory = async (id) => {
 export const getRecipes = async () => {
   const token = await auth.currentUser?.getIdToken();
   return axios.get(`${API_BASE}/recipes`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
@@ -61,7 +68,7 @@ export const addRecipe = async (recipe) => {
   if (!payload.course) payload.course = '';
   if (!payload.diet) payload.diet = '';
   const res = await axios.post(`${API_BASE}/recipes`, payload, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
   return res.data;
 };
@@ -69,14 +76,14 @@ export const addRecipe = async (recipe) => {
 export const updateRecipe = async (id, recipe) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.put(`${API_BASE}/recipes/${id}`, recipe, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const deleteRecipe = async (id) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.delete(`${API_BASE}/recipes/${id}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
@@ -84,28 +91,28 @@ export const deleteRecipe = async (id) => {
 export const getMealPlans = async () => {
   const token = await auth.currentUser?.getIdToken();
   return axios.get(`${API_BASE}/meal-plans`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const addMealPlan = async (plan) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.post(`${API_BASE}/meal-plans`, plan, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const updateMealPlan = async (id, plan) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.put(`${API_BASE}/meal-plans/${id}`, plan, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const deleteMealPlan = async (id) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.delete(`${API_BASE}/meal-plans/${id}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
@@ -113,28 +120,28 @@ export const deleteMealPlan = async (id) => {
 export const getShoppingLists = async () => {
   const token = await auth.currentUser?.getIdToken();
   return axios.get(`${API_BASE}/shopping`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const addShoppingList = async (list) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.post(`${API_BASE}/shopping`, list, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const updateShoppingList = async (id, list) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.put(`${API_BASE}/shopping/${id}`, list, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const deleteShoppingList = async (id) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.delete(`${API_BASE}/shopping/${id}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
@@ -142,28 +149,28 @@ export const deleteShoppingList = async (id) => {
 export const getNotifications = async () => {
   const token = await auth.currentUser?.getIdToken();
   return axios.get(`${API_BASE}/notifications`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const addNotification = async (notification) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.post(`${API_BASE}/notifications`, notification, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const markNotificationRead = async (id) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.put(`${API_BASE}/notifications/${id}/read`, {}, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
 export const deleteNotification = async (id) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.delete(`${API_BASE}/notifications/${id}`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
@@ -171,7 +178,7 @@ export const deleteNotification = async (id) => {
 export const getAnalyticsStats = async () => {
   const token = await auth.currentUser?.getIdToken();
   return axios.get(`${API_BASE}/analytics/stats`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
   });
 };
 
@@ -181,7 +188,8 @@ export async function useIngredients(usedIngredients) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
+      'Authorization': `Bearer ${token}`,
+      'x-api-key': API_KEY
     },
     body: JSON.stringify({ usedIngredients })
   }).then(res => res.json());
