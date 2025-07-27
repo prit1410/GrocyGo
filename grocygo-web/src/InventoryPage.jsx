@@ -59,6 +59,14 @@ export default function InventoryPage() {
     try {
       const res = await getInventory();
       setItems(res.data);
+    } catch (error) {
+      console.error('Error fetching inventory:', error);
+      // Display user-friendly error message
+      setSnackbar({
+        open: true,
+        message: 'Failed to load inventory. Please try again later.',
+        severity: 'error'
+      });
     } finally {
       setLoading(false);
     }
