@@ -3,8 +3,8 @@ import axios from 'axios';
 import { auth } from './firebase';
 
 const API_BASE = 'https://grocygo.onrender.com/api';
-// Store your API key here (replace with your actual key or use env variable in production)
-const API_KEY = process.env.x_api_key;
+// Store your API key here (replace with your actual key)
+const API_KEY = '5b7e18b6-8e28-40ca-b50d-29fadfe420e2-2s6hd';
 
 // AI Suggested Recipes API (returns matched/missing ingredients)
 export const getSuggestedRecipes = async (ingredients, course = '', diet = '') => {
