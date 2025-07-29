@@ -8,25 +8,21 @@ import {
 } from '@mui/material';
 import ShoppingSuggestionInput from './ShoppingSuggestionInput';
 
-// Fetch AI shopping suggestions from backend (returns [{item, needed_for: [...]}, ...])
-// The backend uses the authenticated user's inventory and recipes; payload is ignored.
+// Fetch smart shopping suggestions from backend (returns [{item, needed_for: [...]}, ...])
+// Uses GET /api/shopping/suggestions, which uses the user's inventory and recipes
 async function getShoppingSuggestions() {
   const token = await auth.currentUser?.getIdToken();
-  if (!token) return [];
-  const res = await fetch('https://grocygo.onrender.com/api/ai/shopping-suggestions', {
-    method: 'POST',
+  if (!token) throw new Error("User not authenticated");
+  const res = await fetch('https://grocygo.onrender.com/api/shopping/suggestions', {
+    method: 'GET',
     headers: {
-      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
       'x-api-key': process.env.REACT_APP_API_KEY
-    },
-    body: JSON.stringify({})
+    }
   });
   const data = await res.json();
-  // Always return an array for suggestions
   if (Array.isArray(data)) return data;
-  if (!data) return [];
-  // If backend returns an object (e.g. {error: ...}), return empty array
+  if (data && data.error) throw new Error(data.error);
   return [];
 }
 
@@ -44,6 +40,7 @@ export default function ShoppingListsPage() {
   const [showSmartSuggestions, setShowSmartSuggestions] = useState(true);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState(null);
+  const [suggestionPrompt, setSuggestionPrompt] = useState("");
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);
@@ -71,15 +68,22 @@ export default function ShoppingListsPage() {
     }
   };
 
+  const [rawSuggestions, setRawSuggestions] = useState(null);
+  const [showRaw, setShowRaw] = useState(false);
   const fetchSuggestions = async () => {
     setSuggestionsLoading(true);
     setSuggestionsError(null);
+    setRawSuggestions(null);
     try {
       const data = await getShoppingSuggestions();
       setSuggestions(Array.isArray(data) ? data : []);
+      setRawSuggestions(data);
       setShowSmartSuggestions(true);
+      // Log backend response for debugging
+      console.log('AI Shopping Suggestions backend response:', data);
     } catch (err) {
-      setSuggestionsError('Failed to fetch suggestions. Please try again.');
+      setSuggestionsError(err.message || 'Failed to fetch suggestions. Please try again.');
+      setSuggestions([]);
     } finally {
       setSuggestionsLoading(false);
     }
@@ -220,57 +224,74 @@ export default function ShoppingListsPage() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
             <h2 style={{ margin: 0, flex: 1 }}>Smart Suggestions</h2>
-            <Button
-              variant="contained"
-              sx={{ background: '#19c37d', ml: 2 }}
-              onClick={fetchSuggestions}
-            >Auto Generate</Button>
           </div>
+          <Button
+            variant="contained"
+            sx={{ background: '#19c37d', width: '100%', mb: 2 }}
+            onClick={fetchSuggestions}
+            disabled={suggestionsLoading}
+          >{suggestionsLoading ? 'Generating...' : 'Auto Generate'}</Button>
+          {suggestionsError && (
+            <div style={{ color: 'red', textAlign: 'center', margin: '16px 0' }}>{suggestionsError}</div>
+          )}
+          {(!suggestionsLoading && suggestions.length === 0 && !suggestionsError) && (
+            <div style={{ color: '#aaa', textAlign: 'center', margin: '32px 0' }}>
+              No smart suggestions available.<br />
+              <span style={{ color: '#888', fontSize: 13 }}>
+                This may happen if your inventory and meal plans are empty, or the AI could not generate suggestions for your data.<br />
+                Try adding items to your inventory or meal plans, or adjust your prompt above.<br />
+              </span>
+              <Button variant="outlined" sx={{ mt: 2, mr: 2 }} onClick={() => fetchSuggestions(suggestionPrompt)}>
+                Regenerate Suggestions
+              </Button>
+              {rawSuggestions !== null && (
+                <Button variant="text" sx={{ mt: 2 }} onClick={() => setShowRaw(v => !v)}>
+                  {showRaw ? 'Hide' : 'Show'} Debug Info
+                </Button>
+              )}
+              {showRaw && rawSuggestions !== null && (
+                <pre style={{ textAlign: 'left', marginTop: 12, background: '#f6f6f6', padding: 8, borderRadius: 4, fontSize: 12, maxHeight: 200, overflow: 'auto' }}>
+                  {JSON.stringify(rawSuggestions, null, 2)}
+                </pre>
+              )}
+            </div>
+          )}
           {suggestionsLoading && (
             <div style={{ color: '#888', textAlign: 'center', margin: '32px 0' }}>Loading suggestions...</div>
           )}
-          {suggestionsError && (
-            <div style={{ color: 'red', textAlign: 'center', margin: '32px 0' }}>{suggestionsError}</div>
-          )}
-          {showSmartSuggestions && !suggestionsLoading && !suggestionsError && (
+          {suggestions.length > 0 && !suggestionsLoading && (
             <>
-              {suggestions.length === 0 ? (
-                <div style={{ color: '#aaa', textAlign: 'center', margin: '32px 0' }}>
-                  No smart suggestions available.
-                </div>
-              ) : (
-                suggestions.map((item, idx) => {
-                  // Support both {item, needed_for} and {name, needed_for} for compatibility
-                  const displayName = item.name || item.item;
-                  const neededFor = Array.isArray(item.needed_for) ? item.needed_for.filter(Boolean).join(', ') : '';
-                  if (!displayName) return null;
-                  return (
-                    <div key={displayName + idx} style={{
-                      border: '1px solid #eee',
-                      borderRadius: 8,
-                      padding: 16,
-                      marginBottom: 16,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12
-                    }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 600 }}>{displayName}</div>
-                        {neededFor && (
-                          <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>
-                            Needed for: {neededFor}
-                          </div>
-                        )}
-                      </div>
-                      <Button
-                        variant="outlined"
-                        sx={{ minWidth: 40, p: 0 }}
-                        onClick={() => handleAddFromSuggestion(item)}
-                      >+</Button>
+              {suggestions.map((item, idx) => {
+                // Support both {item, needed_for} and {name, needed_for} for compatibility
+                const displayName = item.name || item.item;
+                const neededFor = Array.isArray(item.needed_for) ? item.needed_for.filter(Boolean).join(', ') : '';
+                if (!displayName) return null;
+                return (
+                  <div key={displayName + idx} style={{
+                    border: '1px solid #eee',
+                    borderRadius: 8,
+                    padding: 16,
+                    marginBottom: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 600 }}>{displayName}</div>
+                      {neededFor && (
+                        <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>
+                          Needed for: {neededFor}
+                        </div>
+                      )}
                     </div>
-                  );
-                })
-              )}
+                    <Button
+                      variant="outlined"
+                      sx={{ minWidth: 40, p: 0 }}
+                      onClick={() => handleAddFromSuggestion(item)}
+                    >+</Button>
+                  </div>
+                );
+              })}
             </>
           )}
         </div>
