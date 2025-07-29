@@ -94,16 +94,19 @@ exports.getSuggestions = async (req, res) => {
     ];
 
 
-    // Prepare recipes for AI backend: pass all recipes with their ingredients
+    // Prepare recipes for AI backend: always pass array of ingredient names (strings)
     const aiRecipes = allRecipes.map(r => {
-      // Accept both 'ingredients' as string or items array
-      if (r.ingredients) {
-        return { recipe_title: r.name, ingredients: r.ingredients };
+      let ingredients = [];
+      if (Array.isArray(r.ingredients)) {
+        // If already array, map to string names if needed
+        ingredients = r.ingredients.map(i => typeof i === 'string' ? i : (i && i.name ? i.name : ''));
+      } else if (typeof r.ingredients === 'string') {
+        ingredients = r.ingredients.split('|').map(i => i.trim());
       } else if (Array.isArray(r.items)) {
-        return { recipe_title: r.name, ingredients: r.items };
-      } else {
-        return null;
+        ingredients = r.items.map(i => typeof i === 'string' ? i : (i && i.name ? i.name : ''));
       }
+      ingredients = ingredients.filter(Boolean);
+      return { recipe_title: r.name, ingredients };
     }).filter(Boolean);
     console.log('AI SUGGESTIONS DEBUG: aiRecipes:', aiRecipes);
 
