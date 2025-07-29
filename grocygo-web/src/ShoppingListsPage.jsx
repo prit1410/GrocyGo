@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { getShoppingLists, addShoppingList, deleteShoppingList } from './api';
+import { getShoppingLists, addShoppingList, updateShoppingList, deleteShoppingList } from './api';
 import { auth } from './firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import {
@@ -91,32 +91,65 @@ export default function ShoppingListsPage() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    // Add all items in the array
+    let updatedLists = [...lists];
     for (const item of items) {
       if (item.name && item.quantity && item.unit && item.category) {
-        await addShoppingList(item);
+        const key = `${item.name.trim().toLowerCase()}|${item.unit}|${item.category}`;
+        const existing = updatedLists.find(
+          l => `${(l.name || l.item || '').trim().toLowerCase()}|${l.unit}|${l.category}` === key
+        );
+        if (existing) {
+          const updated = {
+            ...existing,
+            quantity: Number(existing.quantity || 1) + Number(item.quantity)
+          };
+          await updateShoppingList(existing.id, updated);
+          updatedLists = updatedLists.map(l => l.id === existing.id ? updated : l);
+        } else {
+          const res = await addShoppingList({ ...item, quantity: Number(item.quantity) });
+          updatedLists.push(res.data || { ...item, quantity: Number(item.quantity) });
+        }
       }
     }
+    setLists(updatedLists);
     setItems([{ name: '', quantity: 1, unit: '', category: '' }]);
     setDialogOpen(false);
-    fetchLists();
+    // Only fetchLists on dialog close, not after every add
   };
 
   const handleDelete = async (id) => {
     await deleteShoppingList(id);
-    fetchLists();
+    setLists(lists => lists.filter(l => l.id !== id));
   };
 
   const handleAddFromSuggestion = async (item) => {
     // Accept both {item, needed_for} and {name, ...}
     const name = item.name || item.item || '';
-    await addShoppingList({
-      name,
-      quantity: 1,
-      unit: item.unit || '',
-      category: item.category || ''
-    });
-    fetchLists();
+    const unit = item.unit || '';
+    const category = item.category || '';
+    const key = `${name.trim().toLowerCase()}|${unit}|${category}`;
+    const existing = lists.find(
+      l => `${(l.name || l.item || '').trim().toLowerCase()}|${l.unit}|${l.category}` === key
+    );
+    let updatedLists = [...lists];
+    if (existing) {
+      const updated = {
+        ...existing,
+        quantity: Number(existing.quantity || 1) + 1
+      };
+      await updateShoppingList(existing.id, updated);
+      updatedLists = updatedLists.map(l => l.id === existing.id ? updated : l);
+    } else {
+      const res = await addShoppingList({
+        name,
+        quantity: 1,
+        unit,
+        category
+      });
+      updatedLists.push(res.data || { name, quantity: 1, unit, category });
+    }
+    setLists(updatedLists);
+    // No fetchLists here
   };
 
   if (!user) {
@@ -188,27 +221,34 @@ export default function ShoppingListsPage() {
                   </div>
                 ) : (
                   <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                    {lists.map(list => {
-                      // Show the name, and fallback to item if name is missing
-                      const displayName = list.name || list.item || '(No name)';
-                      return (
-                        <li key={list.id} style={{
-                          display: 'flex', alignItems: 'center', borderBottom: '1px solid #f0f0f0', padding: '12px 0'
-                        }}>
-                          <div style={{ flex: 1 }}>
-                            <span style={{ fontWeight: 500 }}>{displayName}</span>
-                            <span style={{ color: '#888', marginLeft: 8 }}>
-                              {list.quantity} {list.unit} {list.category && `| ${list.category}`}
-                            </span>
-                          </div>
-                          <Button
-                            variant="text"
-                            color="error"
-                            onClick={() => handleDelete(list.id)}
-                          >Delete</Button>
-                        </li>
-                      );
-                    })}
+                    {Object.values(lists.reduce((acc, list) => {
+                      const name = list.name || list.item || '(No name)';
+                      const unit = list.unit || '';
+                      const category = list.category || '';
+                      const key = `${name.toLowerCase()}|${unit}|${category}`;
+                      if (!acc[key]) {
+                        acc[key] = { ...list, name, quantity: Number(list.quantity) || 1 };
+                      } else {
+                        acc[key].quantity += Number(list.quantity) || 1;
+                      }
+                      return acc;
+                    }, {})).map(list => (
+                      <li key={list.name + '|' + list.unit + '|' + list.category} style={{
+                        display: 'flex', alignItems: 'center', borderBottom: '1px solid #f0f0f0', padding: '12px 0'
+                      }}>
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontWeight: 500 }}>{list.name}</span>
+                          <span style={{ color: '#888', marginLeft: 8 }}>
+                            {list.quantity} {list.unit} {list.category && `| ${list.category}`}
+                          </span>
+                        </div>
+                        <Button
+                          variant="text"
+                          color="error"
+                          onClick={() => handleDelete(list.id)}
+                        >Delete</Button>
+                      </li>
+                    ))}
                   </ul>
                 )}
               </>
@@ -263,6 +303,13 @@ export default function ShoppingListsPage() {
             <>
               {suggestions.map((item, idx) => {
                 const displayName = item.name || item.item;
+                // Deduplicate and limit needed_for list for readability
+                let neededFor = Array.isArray(item.needed_for)
+                  ? Array.from(new Set(item.needed_for.filter(Boolean)))
+                  : [];
+                const neededForDisplay = neededFor.length > 0
+                  ? neededFor.slice(0, 3).join(', ') + (neededFor.length > 3 ? `, +${neededFor.length - 3} more` : '')
+                  : '';
                 if (!displayName) return null;
                 return (
                   <div key={displayName + idx} style={{
@@ -276,6 +323,11 @@ export default function ShoppingListsPage() {
                   }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600 }}>{displayName}</div>
+                      {neededForDisplay && (
+                        <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>
+                          Needed for: {neededForDisplay}
+                        </div>
+                      )}
                     </div>
                     <Button
                       variant="outlined"
