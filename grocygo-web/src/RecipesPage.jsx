@@ -2,7 +2,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddRecipeDialog from './AddRecipeDialog';
 import { getRecipes, getInventory, addRecipe, deleteRecipe, getSuggestedRecipes } from './api';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Player } from '@lottiefiles/react-lottie-player';
 
 import { auth } from './firebase';
@@ -12,6 +12,10 @@ import { Card, CardContent, CardMedia, Typography, Grid, Box, Button, Link, Text
 
 
 
+// Module-level cache for recipes and inventory
+let recipesCache = null;
+let inventoryCache = null;
+
 function RecipesPage({ forceOpenDialog }) {
   const [recipes, setRecipes] = useState([]);
   const [user, setUser] = useState(null);
@@ -19,10 +23,12 @@ function RecipesPage({ forceOpenDialog }) {
   const [inventoryItems, setInventoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [suggestedRecipes, setSuggestedRecipes] = useState([]);
+  // In-memory cache for AI suggestions
+  const aiSuggestCacheRef = useRef({});
   const [suggestLoading, setSuggestLoading] = useState(false);
-  // New: AI filter states
-  const [aiCourse, setAiCourse] = useState('');
-  const [aiDiet, setAiDiet] = useState('');
+  // New: AI filter states, persist in localStorage
+  const [aiCourse, setAiCourse] = useState(() => localStorage.getItem('aiCourse') || '');
+  const [aiDiet, setAiDiet] = useState(() => localStorage.getItem('aiDiet') || '');
   // Refresh triggers
   const [recipesRefresh, setRecipesRefresh] = useState(0);
   const [suggestRefresh, setSuggestRefresh] = useState(0);
@@ -36,7 +42,21 @@ function RecipesPage({ forceOpenDialog }) {
   useEffect(() => {
     if (user) {
       setLoading(true);
-      Promise.all([fetchRecipes(), fetchInventory()]).then(() => setLoading(false));
+      // Use cache if available
+      let recipesPromise, inventoryPromise;
+      if (recipesCache && Array.isArray(recipesCache)) {
+        setRecipes(recipesCache);
+        recipesPromise = Promise.resolve();
+      } else {
+        recipesPromise = fetchRecipes();
+      }
+      if (inventoryCache && Array.isArray(inventoryCache)) {
+        setInventoryItems(inventoryCache);
+        inventoryPromise = Promise.resolve();
+      } else {
+        inventoryPromise = fetchInventory();
+      }
+      Promise.all([recipesPromise, inventoryPromise]).then(() => setLoading(false));
     }
     // eslint-disable-next-line
   }, [user, recipesRefresh]);
@@ -46,13 +66,31 @@ function RecipesPage({ forceOpenDialog }) {
     if (inventoryItems.length > 0) {
       setSuggestLoading(true);
       const aiIngredients = inventoryItems.map(i => i.name || i);
-      getSuggestedRecipes(aiIngredients, aiCourse, aiDiet)
-        .then(res => setSuggestedRecipes(res))
-        .catch(() => setSuggestedRecipes([]))
-        .finally(() => setSuggestLoading(false));
+      // Create a cache key based on ingredients, course, and diet
+      const cacheKey = JSON.stringify({ aiIngredients, aiCourse, aiDiet });
+      if (aiSuggestCacheRef.current[cacheKey]) {
+        setSuggestedRecipes(aiSuggestCacheRef.current[cacheKey]);
+        setSuggestLoading(false);
+      } else {
+        getSuggestedRecipes(aiIngredients, aiCourse, aiDiet)
+          .then(res => {
+            setSuggestedRecipes(res);
+            aiSuggestCacheRef.current[cacheKey] = res;
+          })
+          .catch(() => setSuggestedRecipes([]))
+          .finally(() => setSuggestLoading(false));
+      }
     }
     // eslint-disable-next-line
   }, [inventoryItems, aiCourse, aiDiet, suggestRefresh]);
+
+  // Persist aiCourse and aiDiet to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('aiCourse', aiCourse);
+  }, [aiCourse]);
+  useEffect(() => {
+    localStorage.setItem('aiDiet', aiDiet);
+  }, [aiDiet]);
 
   // Open Add dialog if forced by parent (App)
   useEffect(() => {
@@ -62,7 +100,9 @@ function RecipesPage({ forceOpenDialog }) {
   const fetchRecipes = async () => {
     try {
       const res = await getRecipes();
-      setRecipes(Array.isArray(res.data) ? res.data : []);
+      const arr = Array.isArray(res.data) ? res.data : [];
+      setRecipes(arr);
+      recipesCache = arr;
     } catch (e) {
       setRecipes([]);
     }
@@ -71,7 +111,9 @@ function RecipesPage({ forceOpenDialog }) {
   const fetchInventory = async () => {
     try {
       const res = await getInventory();
-      setInventoryItems(Array.isArray(res.data) ? res.data : []);
+      const arr = Array.isArray(res.data) ? res.data : [];
+      setInventoryItems(arr);
+      inventoryCache = arr;
     } catch (e) {
       setInventoryItems([]);
     }
@@ -80,12 +122,21 @@ function RecipesPage({ forceOpenDialog }) {
   const handleAddRecipe = async (recipe) => {
     await addRecipe(recipe);
     setDialogOpen(false);
-    fetchRecipes();
+    // Optimistically update cache and state
+    setRecipes(prev => {
+      const updated = [...prev, recipe];
+      recipesCache = updated;
+      return updated;
+    });
   };
 
   const handleDelete = async (id) => {
     await deleteRecipe(id);
-    fetchRecipes();
+    setRecipes(prev => {
+      const updated = prev.filter(r => r.id !== id);
+      recipesCache = updated;
+      return updated;
+    });
   };
 
   const handleSaveToMyRecipes = async (recipe) => {
@@ -140,7 +191,16 @@ function RecipesPage({ forceOpenDialog }) {
     <Box sx={{ width: '100%', p: { xs: 1, md: 4 } }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" sx={{ flexGrow: 1 }}>Recipes</Typography>
-        <Button variant="outlined" color="secondary" sx={{ mr: 2 }} onClick={() => setRecipesRefresh(r => r + 1)}>Refresh</Button>
+        <Button
+          variant="outlined"
+          color="secondary"
+          sx={{ mr: 2 }}
+          onClick={() => {
+            recipesCache = null;
+            inventoryCache = null;
+            setRecipesRefresh(r => r + 1);
+          }}
+        >Refresh</Button>
         <Button variant="contained" color="primary" onClick={() => setDialogOpen(true)}>Add Recipe</Button>
       </Box>
       <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>
@@ -335,7 +395,10 @@ function RecipesPage({ forceOpenDialog }) {
       {/* AI Recipe Filters */}
       <Box sx={{ mt: 4, mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
         <Typography variant="h4" sx={{ mr: 2 }}>Suggested Recipes (AI)</Typography>
-        <Button variant="outlined" color="secondary" sx={{ mr: 2 }} onClick={() => setSuggestRefresh(r => r + 1)}>Refresh</Button>
+        <Button variant="outlined" color="secondary" sx={{ mr: 2 }} onClick={() => {
+          aiSuggestCacheRef.current = {};
+          setSuggestRefresh(r => r + 1);
+        }}>Refresh</Button>
         <select value={aiCourse} onChange={e => setAiCourse(e.target.value)} style={{ marginRight: 12 }}>
           <option value="">All Courses</option>
           {['Dinner','Lunch','Side Dish','South Indian Breakfast','Snack','Dessert','Appetizer','Main Course','World Breakfast','Indian Breakfast','North Indian Breakfast','One Pot Dish','Brunch'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
