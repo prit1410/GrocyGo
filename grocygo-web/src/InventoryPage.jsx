@@ -40,6 +40,7 @@ export default function InventoryPage() {
   });
   const [user, setUser] = useState(null);
   const [isSignup, setIsSignup] = useState(false); // <-- move this here
+  const [snackbar, setSnackbar] = useState(null);
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(false);
