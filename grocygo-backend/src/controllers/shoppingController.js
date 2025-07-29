@@ -71,27 +71,11 @@ exports.getSuggestions = async (req, res) => {
     const userRecipes = recipesSnap.docs.map(doc => doc.data());
     console.log('AI SUGGESTIONS DEBUG: userRecipes:', userRecipes);
 
-    // Also load public/AI recipes from CSV
-    const { getRecipeData } = require('../ai/utils');
-    let publicRecipes = [];
-    try {
-      publicRecipes = await getRecipeData();
-    } catch (e) {
-      publicRecipes = [];
-    }
-    console.log('AI SUGGESTIONS DEBUG: publicRecipes count:', publicRecipes.length);
-
-    // Combine user and public recipes (always include public/AI recipes for suggestions)
-    const allRecipes = [
-      ...userRecipes.map(r => ({
-        name: r.name,
-        items: Array.isArray(r.items) ? r.items : [],
-      })),
-      ...publicRecipes.map(r => ({
-        name: r.recipe_title,
-        items: (r.ingredients || '').split('|').map(i => ({ name: i.trim() })).filter(i => i.name),
-      })),
-    ];
+    // Only use user's own recipes for suggestions (do not include public/AI recipes)
+    const allRecipes = userRecipes.map(r => ({
+      name: r.name,
+      items: Array.isArray(r.items) ? r.items : [],
+    }));
 
 
     // Prepare recipes for AI backend: always pass array of ingredient names (strings)

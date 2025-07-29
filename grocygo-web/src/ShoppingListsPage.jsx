@@ -262,9 +262,7 @@ export default function ShoppingListsPage() {
           {suggestions.length > 0 && !suggestionsLoading && (
             <>
               {suggestions.map((item, idx) => {
-                // Support both {item, needed_for} and {name, needed_for} for compatibility
                 const displayName = item.name || item.item;
-                const neededFor = Array.isArray(item.needed_for) ? item.needed_for.filter(Boolean).join(', ') : '';
                 if (!displayName) return null;
                 return (
                   <div key={displayName + idx} style={{
@@ -278,11 +276,6 @@ export default function ShoppingListsPage() {
                   }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 600 }}>{displayName}</div>
-                      {neededFor && (
-                        <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>
-                          Needed for: {neededFor}
-                        </div>
-                      )}
                     </div>
                     <Button
                       variant="outlined"
