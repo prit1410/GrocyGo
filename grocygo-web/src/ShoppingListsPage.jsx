@@ -15,7 +15,11 @@ async function getShoppingSuggestions() {
   if (!token) return [];
   const res = await fetch('https://grocygo.onrender.com/api/ai/shopping-suggestions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      'x-api-key': process.env.REACT_APP_API_KEY
+    },
     body: JSON.stringify({})
   });
   const data = await res.json();
