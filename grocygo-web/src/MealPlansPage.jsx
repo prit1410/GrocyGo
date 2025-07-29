@@ -12,8 +12,7 @@ async function getMealSuggestions(inventory = [], diet = '') {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-      'x-api-key': import.meta.env.VITE_API_KEY
+      Authorization: `Bearer ${token}`
     },
     body: JSON.stringify({ inventory, diet })
   });
