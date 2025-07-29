@@ -26,10 +26,16 @@ async function getShoppingSuggestions() {
   return [];
 }
 
+
 const units = ['pcs', 'kg', 'packet', 'box', 'loaf', 'container'];
 const categories = ['fruits', 'vegetables', 'namkeen', 'meat & fish', 'dairy', 'pantry'];
 
+// Module-level cache for shopping lists (persists while app is loaded)
+let shoppingListsCache = null;
+
 export default function ShoppingListsPage() {
+  // In-memory cache for AI shopping suggestions (per session)
+  const aiShoppingSuggestCacheRef = useRef({});
   const [lists, setLists] = useState([]);
   const [items, setItems] = useState([
     { name: '', quantity: 1, unit: '', category: '' }
@@ -50,19 +56,43 @@ export default function ShoppingListsPage() {
   const [loading, setLoading] = useState(false);
   const firstLoad = useRef(true);
 
+
   useEffect(() => {
     if (user && firstLoad.current) {
-      fetchLists();
-      fetchSuggestions();
+      // Restore shopping lists from cache if available
+      if (shoppingListsCache) {
+        setLists(shoppingListsCache);
+      } else {
+        fetchLists();
+      }
+      // Restore AI shopping suggestions from in-memory cache or localStorage
+      const aiCacheKey = 'default';
+      let cached = aiShoppingSuggestCacheRef.current[aiCacheKey];
+      if (!cached) {
+        try {
+          const local = localStorage.getItem('aiShoppingSuggestions');
+          if (local) {
+            cached = JSON.parse(local);
+            aiShoppingSuggestCacheRef.current[aiCacheKey] = cached;
+          }
+        } catch {}
+      }
+      if (cached) {
+        setSuggestions(cached);
+      } else {
+        setSuggestions([]);
+      }
       firstLoad.current = false;
     }
   }, [user]);
+
 
   const fetchLists = async () => {
     setLoading(true);
     try {
       const res = await getShoppingLists();
       setLists(res.data);
+      shoppingListsCache = res.data; // Update cache
     } finally {
       setLoading(false);
     }
@@ -70,15 +100,28 @@ export default function ShoppingListsPage() {
 
   const [rawSuggestions, setRawSuggestions] = useState(null);
   const [showRaw, setShowRaw] = useState(false);
+
   const fetchSuggestions = async () => {
     setSuggestionsLoading(true);
     setSuggestionsError(null);
     setRawSuggestions(null);
+    const aiCacheKey = 'default'; // You can expand this if you add filters/prompts
+    if (aiShoppingSuggestCacheRef.current[aiCacheKey]) {
+      setSuggestions(aiShoppingSuggestCacheRef.current[aiCacheKey]);
+      setSuggestionsLoading(false);
+      return;
+    }
     try {
       const data = await getShoppingSuggestions();
-      setSuggestions(Array.isArray(data) ? data : []);
+      const arr = Array.isArray(data) ? data : [];
+      setSuggestions(arr);
       setRawSuggestions(data);
       setShowSmartSuggestions(true);
+      aiShoppingSuggestCacheRef.current[aiCacheKey] = arr;
+      // Persist to localStorage
+      try {
+        localStorage.setItem('aiShoppingSuggestions', JSON.stringify(arr));
+      } catch {}
       // Log backend response for debugging
       console.log('AI Shopping Suggestions backend response:', data);
     } catch (err) {

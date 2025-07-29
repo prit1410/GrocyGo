@@ -7,7 +7,7 @@ import {
   Card, CardContent, Typography, Grid, IconButton, Box,
   Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Button, Select, MenuItem, FormControl,
-  InputLabel, InputAdornment, Tooltip
+  InputLabel, InputAdornment, Tooltip, Snackbar, Alert
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -26,8 +26,12 @@ const units = ['pieces', 'kg', 'bag', 'packet', 'box', 'containers', 'lbs', 'loa
 const locations = ['Counter', 'Fridge', 'Freezer', 'Pantry'];
 const categories = ['fruits', 'vegetables', 'namkeen', 'meat & fish', 'dairy', 'pantry'];
 
+// Module-level cache for inventory data
+let inventoryCache = null;
+
 export default function InventoryPage() {
   const [items, setItems] = useState([]);
+  const cacheRef = useRef(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [form, setForm] = useState({
@@ -49,7 +53,13 @@ export default function InventoryPage() {
     const unsub = auth.onAuthStateChanged(async (u) => {
       setUser(u);
       if (u) {
-        await fetchItems();
+        // Use cache if available
+        if (inventoryCache && Array.isArray(inventoryCache)) {
+          setItems(inventoryCache);
+          cacheRef.current = inventoryCache;
+        } else {
+          await fetchItems();
+        }
       }
     });
     return unsub;
@@ -60,9 +70,10 @@ export default function InventoryPage() {
     try {
       const res = await getInventory();
       setItems(res.data);
+      inventoryCache = res.data;
+      cacheRef.current = res.data;
     } catch (error) {
       console.error('Error fetching inventory:', error);
-      // Display user-friendly error message
       setSnackbar({
         open: true,
         message: 'Failed to load inventory. Please try again later.',
@@ -76,14 +87,21 @@ export default function InventoryPage() {
   const handleAdd = async (e) => {
     e.preventDefault();
     try {
-      await addInventory({
+      const res = await addInventory({
         ...form,
         expiryDate: form.expiryDate?.toISOString(),
         createdAt: new Date().toISOString()
       });
       setDialogOpen(false);
       setForm({ name: '', quantity: 1, unit: '', location: '', expiryDate: null, category: '' });
-      fetchItems();
+      // Optimistically update cache and state
+      const newItem = res?.data || { ...form, id: Date.now().toString() };
+      setItems(prev => {
+        const updated = [...prev, newItem];
+        inventoryCache = updated;
+        cacheRef.current = updated;
+        return updated;
+      });
     } catch (err) {
       console.error('Error adding item:', err);
     }
@@ -92,7 +110,12 @@ export default function InventoryPage() {
   const handleDelete = async (id) => {
     try {
       await deleteInventory(id);
-      fetchItems();
+      setItems(prev => {
+        const updated = prev.filter(item => item.id !== id);
+        inventoryCache = updated;
+        cacheRef.current = updated;
+        return updated;
+      });
     } catch (err) {
       console.error('Error deleting item:', err);
     }
@@ -152,7 +175,18 @@ export default function InventoryPage() {
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
+    <>
+      <Snackbar
+        open={!!snackbar?.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={() => setSnackbar(null)} severity={snackbar?.severity || 'info'} sx={{ width: '100%' }}>
+          {snackbar?.message}
+        </Alert>
+      </Snackbar>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4" sx={{ flexGrow: 1 }}>Inventory</Typography>
         <Button onClick={() => navigate('/recipes')} sx={{ mr: 1 }} variant="outlined">
@@ -171,7 +205,10 @@ export default function InventoryPage() {
         <Button
           variant="outlined"
           sx={{ ml: 2 }}
-          onClick={fetchItems}
+          onClick={() => {
+            inventoryCache = null;
+            fetchItems();
+          }}
           disabled={loading}
         >
           {loading ? 'Refreshing...' : 'Refresh'}
@@ -362,5 +399,6 @@ export default function InventoryPage() {
         </form>
       </Dialog>
     </Box>
+    </>
   );
 }

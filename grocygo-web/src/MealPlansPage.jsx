@@ -20,12 +20,31 @@ async function getMealSuggestions(inventory = [], diet = '') {
   return await res.json();
 }
 
+
 const daysOfWeek = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
 ];
 const mealSlots = ['Breakfast', 'Lunch', 'Dinner'];
 
+// Module-level cache for meal plans (persists while app is loaded)
+let mealPlansCache = null;
+const MEAL_PLANS_LS_KEY = 'mealPlansCache';
+const AI_SUGGEST_LS_KEY = 'aiMealSuggestCache';
+
+
+
 export default function MealPlansPage() {
+  // In-memory cache for AI meal suggestions (per session)
+  const aiSuggestCacheRef = useRef({});
+  // On mount, restore AI suggestions cache from localStorage
+  useEffect(() => {
+    const ls = localStorage.getItem(AI_SUGGEST_LS_KEY);
+    if (ls) {
+      try {
+        aiSuggestCacheRef.current = JSON.parse(ls);
+      } catch {}
+    }
+  }, []);
   // State for AI suggestion dialog
   const [aiDialogOpen, setAIDialogOpen] = useState(false);
   const [selectedAISuggestion, setSelectedAISuggestion] = useState(null);
@@ -45,30 +64,80 @@ export default function MealPlansPage() {
   const [completeDialog, setCompleteDialog] = useState({ open: false, plan: null });
   const [ingredientDialog, setIngredientDialog] = useState({ open: false, plan: null, ingredients: [] });
   const [completedMeals, setCompletedMeals] = useState({}); // { planId: true }
-  const [selectedDiet, setSelectedDiet] = useState('');
+  // Persist selectedDiet in localStorage, restore on mount
+  const [selectedDiet, setSelectedDiet] = useState(() => localStorage.getItem('mealPlanDiet') || '');
   const [deletingPlanId, setDeletingPlanId] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const firstLoad = useRef(true);
+  // Persist selectedDiet to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('mealPlanDiet', selectedDiet);
+  }, [selectedDiet]);
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);
     return unsub;
   }, []);
 
+
+
+  // On user login, restore meal plans and recipes, but do not fetch AI suggestions yet
   useEffect(() => {
     if (user && firstLoad.current) {
-      fetchPlans();
-      fetchSuggestions();
+      // Try to restore meal plans from localStorage first
+      const ls = localStorage.getItem(MEAL_PLANS_LS_KEY);
+      if (ls) {
+        try {
+          const week = JSON.parse(ls);
+          setPlans(week);
+          mealPlansCache = week;
+        } catch {
+          fetchPlans();
+        }
+      } else if (mealPlansCache) {
+        setPlans(mealPlansCache);
+      } else {
+        fetchPlans();
+      }
       fetchRecipes();
       firstLoad.current = false;
     }
+    // eslint-disable-next-line
   }, [user]);
+
+  // Always keep AI suggestions in sync with selectedDiet and recipes
+  useEffect(() => {
+    if (user && recipes.length > 0) {
+      const inventory = recipes.flatMap(r => r.items?.map(i => i.name) || []);
+      const aiCacheKey = JSON.stringify({ diet: selectedDiet, inventory });
+      // Try to restore from localStorage if not in memory
+      if (aiSuggestCacheRef.current[aiCacheKey]) {
+        setSuggestions(aiSuggestCacheRef.current[aiCacheKey]);
+      } else {
+        // Try localStorage
+        const ls = localStorage.getItem(AI_SUGGEST_LS_KEY);
+        if (ls) {
+          try {
+            const cache = JSON.parse(ls);
+            if (cache[aiCacheKey]) {
+              aiSuggestCacheRef.current = cache;
+              setSuggestions(cache[aiCacheKey]);
+              return;
+            }
+          } catch {}
+        }
+        fetchSuggestions();
+      }
+    }
+    // eslint-disable-next-line
+  }, [user, recipes, selectedDiet]);
 
   const fetchRecipes = async () => {
     const res = await getRecipes();
     setRecipes(res.data);
   };
+
 
   const fetchPlans = async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -85,16 +154,31 @@ export default function MealPlansPage() {
         }
       });
       setPlans(week);
+      mealPlansCache = week; // Update cache
+      // Save to localStorage
+      try {
+        localStorage.setItem(MEAL_PLANS_LS_KEY, JSON.stringify(week));
+      } catch {}
     } finally {
       if (showLoading) setLoading(false);
     }
   };
 
+
   const fetchSuggestions = async () => {
-    // Replace this with however you get the user's inventory
     const inventory = recipes.flatMap(r => r.items?.map(i => i.name) || []);
+    const aiCacheKey = JSON.stringify({ diet: selectedDiet, inventory });
+    if (aiSuggestCacheRef.current[aiCacheKey]) {
+      setSuggestions(aiSuggestCacheRef.current[aiCacheKey]);
+      return;
+    }
     const data = await getMealSuggestions(inventory, selectedDiet);
     setSuggestions(data);
+    aiSuggestCacheRef.current[aiCacheKey] = data;
+    // Save to localStorage
+    try {
+      localStorage.setItem(AI_SUGGEST_LS_KEY, JSON.stringify(aiSuggestCacheRef.current));
+    } catch {}
   };
 
   const handleAddMeal = (day, mealType) => {
