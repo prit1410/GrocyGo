@@ -313,7 +313,7 @@ export default function InventoryPage() {
         <form onSubmit={handleAdd}>
           <DialogContent>
             <Grid container spacing={2}>
-              <Grid item xs={12}>
+              <Grid gridColumn="span 12">
                 <SuggestionInput
                   label="Name"
                   value={form.name}
@@ -328,7 +328,7 @@ export default function InventoryPage() {
                   required
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid gridColumn="span 6">
                 <TextField
                   fullWidth
                   label="Quantity"
@@ -338,7 +338,7 @@ export default function InventoryPage() {
                   required
                 />
               </Grid>
-              <Grid item xs={6}>
+              <Grid gridColumn="span 6">
                 <FormControl fullWidth required>
                   <InputLabel>Unit</InputLabel>
                   <Select
@@ -352,7 +352,7 @@ export default function InventoryPage() {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12}>
+              <Grid gridColumn="span 12">
                 <FormControl fullWidth required>
                   <InputLabel>Location</InputLabel>
                   <Select
@@ -366,7 +366,7 @@ export default function InventoryPage() {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12}>
+              <Grid gridColumn="span 12">
                 <FormControl fullWidth required>
                   <InputLabel>Category</InputLabel>
                   <Select
@@ -380,7 +380,7 @@ export default function InventoryPage() {
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={12}>
+              <Grid gridColumn="span 12">
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                   <DatePicker
                     label="Expiry Date"
