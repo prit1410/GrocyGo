@@ -181,15 +181,14 @@ export const getAnalyticsStats = async () => {
   });
 };
 
-export async function useIngredients(usedIngredients) {
-  const token = await auth.currentUser.getIdToken();
-  return fetch(`${API_BASE}/inventory/use`, {
-    method: 'POST',
+
+// Use ingredients for meal plan (decrease inventory and optionally delete plan)
+export const useIngredients = async ({ ingredients, planId }) => {
+  const token = await auth.currentUser?.getIdToken();
+  return axios.post(`${API_BASE}/meal-plans/use-ingredients`, { ingredients, planId }, {
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       'x-api-key': API_KEY
-    },
-    body: JSON.stringify({ usedIngredients })
-  }).then(res => res.json());
-}
+    }
+  });
+};
