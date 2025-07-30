@@ -108,7 +108,19 @@ exports.useIngredients = async (req, res) => {
       updated.push({ name: invItem.name, oldQuantity: invQty, used: qty, newQuantity: newQty });
     }
 
-    // If planId is provided, delete the meal plan document
+    // Add notification for used ingredients
+    if (updated.length > 0) {
+      const usedNames = updated.map(u => `${u.name} (${u.used})`).join(', ');
+      await db.collection('user').doc(userId).collection('notifications').add({
+        title: 'Meal completed',
+        message: `You used: ${usedNames}`,
+        type: 'meal-used',
+        createdAt: new Date(),
+        read: false
+      });
+    }
+
+    // If planId is provided, delete the meal plan document and notify
     let deletedPlan = null;
     if (planId) {
       const planRef = db.collection('user').doc(userId).collection('mealPlans').doc(planId);
@@ -116,6 +128,14 @@ exports.useIngredients = async (req, res) => {
       if (planDoc.exists) {
         deletedPlan = { id: planDoc.id, ...planDoc.data() };
         await planRef.delete();
+        // Notify about completed meal
+        await db.collection('user').doc(userId).collection('notifications').add({
+          title: 'Meal plan completed',
+          message: `You completed: ${deletedPlan.title || deletedPlan.name || 'a meal'}`,
+          type: 'meal-completed',
+          createdAt: new Date(),
+          read: false
+        });
       }
     }
 
