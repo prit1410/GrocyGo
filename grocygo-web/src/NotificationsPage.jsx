@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { getNotifications, addNotification, markNotificationRead, deleteNotification } from './api';
+import { getNotifications, markNotificationRead, deleteNotification } from './api';
 import { auth } from './firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import NotificationsIcon from '@mui/icons-material/Notifications';
@@ -13,7 +13,6 @@ import { Badge, Card, CardContent, Typography, IconButton, Box, Button, Snackbar
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
-  const [form, setForm] = useState({ title: '', message: '' });
   const [user, setUser] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'info' });
 
@@ -31,13 +30,6 @@ export default function NotificationsPage() {
     setNotifications(Array.isArray(res.data) ? res.data : []);
   };
 
-  const handleAdd = async (e) => {
-    e.preventDefault();
-    await addNotification(form);
-    setForm({ title: '', message: '' });
-    setSnackbar({ open: true, message: 'Notification added!', severity: 'success' });
-    fetchNotifications();
-  };
 
   const handleMarkRead = async (id) => {
     await markNotificationRead(id);
@@ -101,9 +93,13 @@ export default function NotificationsPage() {
     <Box sx={{ maxWidth: 600, mx: 'auto', mt: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
         <IconButton color="primary">
-          <Badge badgeContent={unreadCount} color="error">
+          {unreadCount > 0 ? (
+            <Badge badgeContent={unreadCount} color="error">
+              <NotificationsIcon />
+            </Badge>
+          ) : (
             <NotificationsIcon />
-          </Badge>
+          )}
         </IconButton>
         <Typography variant="h5" sx={{ flex: 1, fontWeight: 700, ml: 1 }}>Notifications</Typography>
         <Button onClick={() => signOut(auth)} color="secondary" variant="outlined">Logout</Button>
@@ -114,7 +110,8 @@ export default function NotificationsPage() {
             {typeIcon[type] || typeIcon.default} {typeLabel[type] || typeLabel.default}
           </Typography>
           {grouped[type].map(n => (
-            <Card key={n.id} sx={{ mb: 1, opacity: n.read ? 0.5 : 1, borderLeft: `6px solid ${typeColor[type] || typeColor.default}` }}>
+            <Card key={n.id} sx={{ mb: 1, opacity: n.read ? 0.5 : 1, borderLeft: `6px solid ${typeColor[type] || typeColor.default}`, cursor: n.read ? 'default' : 'pointer' }}
+              onClick={() => !n.read && handleMarkRead(n.id)}>
               <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 {typeIcon[type] || typeIcon.default}
                 <Box sx={{ flex: 1 }}>
@@ -123,8 +120,7 @@ export default function NotificationsPage() {
                   <Chip label={typeLabel[type] || typeLabel.default} size="small" sx={{ mt: 0.5, background: typeColor[type] || typeColor.default, color: '#fff' }} />
                 </Box>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Button onClick={() => handleMarkRead(n.id)} disabled={n.read} size="small" color="success" variant="outlined" sx={{ mb: 0.5 }}>Mark Read</Button>
-                  <Button onClick={() => handleDelete(n.id)} size="small" color="error" variant="outlined">Delete</Button>
+                  <Button onClick={e => { e.stopPropagation(); handleDelete(n.id); }} size="small" color="error" variant="outlined">Delete</Button>
                 </Box>
               </CardContent>
             </Card>
