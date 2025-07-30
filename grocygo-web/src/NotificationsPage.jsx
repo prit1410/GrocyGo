@@ -108,11 +108,6 @@ export default function NotificationsPage() {
         <Typography variant="h5" sx={{ flex: 1, fontWeight: 700, ml: 1 }}>Notifications</Typography>
         <Button onClick={() => signOut(auth)} color="secondary" variant="outlined">Logout</Button>
       </Box>
-      <form onSubmit={handleAdd} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <input placeholder="Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} style={{ flex: 1, padding: 8, borderRadius: 6, border: '1px solid #bbb' }} />
-        <input placeholder="Message" value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} style={{ flex: 2, padding: 8, borderRadius: 6, border: '1px solid #bbb' }} />
-        <Button type="submit" variant="contained">Add</Button>
-      </form>
       {Object.keys(grouped).map(type => (
         <Box key={type} sx={{ mb: 3 }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, color: typeColor[type] || typeColor.default, mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
