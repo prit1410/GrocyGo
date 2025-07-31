@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import SuggestionInput from './SuggestionInput';
 import { getInventory, addInventory, deleteInventory } from './api';
+import { useTheme } from './ThemeContext';
+import ThemeToggle from './components/ThemeToggle';
 import { auth } from './firebase';
 import { signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
 import {
@@ -26,156 +28,63 @@ const units = ['pieces', 'kg', 'bag', 'packet', 'box', 'containers', 'lbs', 'loa
 const locations = ['Counter', 'Fridge', 'Freezer', 'Pantry'];
 const categories = ['fruits', 'vegetables', 'namkeen', 'meat & fish', 'dairy', 'pantry'];
 
-// Module-level cache for inventory data
-let inventoryCache = null;
-
 export default function InventoryPage() {
+  // --- State and hooks ---
   const [items, setItems] = useState([]);
-  const cacheRef = useRef(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [form, setForm] = useState({
-    name: '',
-    quantity: 1,
-    unit: '',
-    location: '',
-    expiryDate: null,
-    category: ''
-  });
-  const [user, setUser] = useState(null);
-  const [isSignup, setIsSignup] = useState(false); // <-- move this here
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState({ name: '', quantity: 1, unit: '', location: '', expiryDate: null, category: '' });
   const [snackbar, setSnackbar] = useState(null);
+  const theme = useTheme();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(false);
-
+  // --- Fetch items from backend ---
   useEffect(() => {
-    const unsub = auth.onAuthStateChanged(async (u) => {
-      setUser(u);
-      if (u) {
-        // Use cache if available
-        if (inventoryCache && Array.isArray(inventoryCache)) {
-          setItems(inventoryCache);
-          cacheRef.current = inventoryCache;
+    setLoading(true);
+    getInventory()
+      .then(res => {
+        if (Array.isArray(res.data)) {
+          setItems(res.data);
+        } else if (Array.isArray(res)) {
+          setItems(res);
         } else {
-          await fetchItems();
+          setItems([]);
         }
-      }
-    });
-    return unsub;
+      })
+      .catch(() => setItems([]))
+      .finally(() => setLoading(false));
   }, []);
 
-  const fetchItems = async () => {
-    setLoading(true);
-    try {
-      const res = await getInventory();
-      setItems(res.data);
-      inventoryCache = res.data;
-      cacheRef.current = res.data;
-    } catch (error) {
-      console.error('Error fetching inventory:', error);
-      setSnackbar({
-        open: true,
-        message: 'Failed to load inventory. Please try again later.',
-        severity: 'error'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAdd = async (e) => {
+  // --- Handlers ---
+  const handleAdd = (e) => {
     e.preventDefault();
-    try {
-      const res = await addInventory({
-        ...form,
-        expiryDate: form.expiryDate?.toISOString(),
-        createdAt: new Date().toISOString()
-      });
-      setDialogOpen(false);
-      setForm({ name: '', quantity: 1, unit: '', location: '', expiryDate: null, category: '' });
-      // Optimistically update cache and state
-      const newItem = res?.data || { ...form, id: Date.now().toString() };
-      setItems(prev => {
-        const updated = [...prev, newItem];
-        inventoryCache = updated;
-        cacheRef.current = updated;
-        return updated;
-      });
-    } catch (err) {
-      console.error('Error adding item:', err);
-    }
+    setItems(prev => ([...prev, { ...form, id: Date.now() }]));
+    setDialogOpen(false);
+    setForm({ name: '', quantity: 1, unit: '', location: '', expiryDate: null, category: '' });
+    setSnackbar({ open: true, message: 'Item added!', severity: 'success' });
   };
-
-  const handleDelete = async (id) => {
-    try {
-      await deleteInventory(id);
-      setItems(prev => {
-        const updated = prev.filter(item => item.id !== id);
-        inventoryCache = updated;
-        cacheRef.current = updated;
-        return updated;
-      });
-    } catch (err) {
-      console.error('Error deleting item:', err);
-    }
+  const handleDelete = (id) => {
+    setItems(prev => prev.filter(item => item.id !== id));
+    setSnackbar({ open: true, message: 'Item deleted!', severity: 'info' });
   };
-
   const getExpiryStatus = (date) => {
     if (!date) return null;
     const expiryDate = new Date(date);
     const today = new Date();
     const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
-    
-    if (daysUntilExpiry < 0) return { text: 'Expired', color: '#ef5350' };
-    if (daysUntilExpiry === 0) return { text: 'Expires Today', color: '#ef5350' };
-    if (daysUntilExpiry <= 3) return { text: `Expires in ${daysUntilExpiry} days`, color: '#ff9800' };
-    return { text: `Expires in ${daysUntilExpiry} days`, color: '#4caf50' };
+    if (daysUntilExpiry < 0) return { text: 'Expired', color: theme.colors.error };
+    if (daysUntilExpiry === 0) return { text: 'Expires Today', color: theme.colors.error };
+    if (daysUntilExpiry <= 3) return { text: `Expires in ${daysUntilExpiry} days`, color: theme.colors.secondary };
+    return { text: `Expires in ${daysUntilExpiry} days`, color: theme.colors.success };
   };
-
-  const filteredItems = items.filter(item => 
+  const filteredItems = items.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (!user) {
-    let email, password, name;
-    return (
-      <form
-        onSubmit={async e => {
-          e.preventDefault();
-          if (isSignup) {
-            await createUserWithEmailAndPassword(auth, email.value, password.value);
-            if (name && name.value) {
-              await auth.currentUser.updateProfile({ displayName: name.value });
-            }
-          } else {
-            await signInWithEmailAndPassword(auth, email.value, password.value);
-          }
-        }}
-        style={{ maxWidth: 320, margin: '40px auto' }}
-      >
-        {isSignup && (
-          <TextField label="Name" inputRef={el => name = el} fullWidth margin="normal" />
-        )}
-        <TextField label="Email" inputRef={el => email = el} fullWidth margin="normal" />
-        <TextField label="Password" type="password" inputRef={el => password = el} fullWidth margin="normal" />
-        <Button type="submit" variant="contained" color="primary" fullWidth>
-          {isSignup ? 'Sign Up' : 'Login'}
-        </Button>
-        <Button
-          onClick={e => { e.preventDefault(); setIsSignup(s => !s); }}
-          color="secondary"
-          fullWidth
-          sx={{ mt: 1 }}
-        >
-          {isSignup ? 'Already have an account? Login' : "Don't have an account? Sign Up"}
-        </Button>
-      </form>
-    );
-  }
-
+  // --- Render ---
   return (
-    <>
+    <Box sx={{ minHeight: '100vh', background: theme.colors.background, p: 3 }}>
       <Snackbar
         open={!!snackbar?.open}
         autoHideDuration={4000}
@@ -186,40 +95,25 @@ export default function InventoryPage() {
           {snackbar?.message}
         </Alert>
       </Snackbar>
-      <Box sx={{ maxWidth: 1200, mx: 'auto', p: 3 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ flexGrow: 1 }}>Inventory</Typography>
-        <Button onClick={() => navigate('/recipes')} sx={{ mr: 1 }} variant="outlined">
-          Suggested Recipes
-        </Button>
-        <Button startIcon={<ScanIcon />} sx={{ mr: 1 }}>Scan</Button>
-        <Button startIcon={<KeyboardVoiceIcon />} sx={{ mr: 1 }}>Voice</Button>
-        <Button 
-          startIcon={<AddIcon />}
-          variant="contained"
-          color="primary"
-          onClick={() => setDialogOpen(true)}
-        >
-          Add Item
-        </Button>
-        <Button
-          variant="outlined"
-          sx={{ ml: 2 }}
-          onClick={() => {
-            inventoryCache = null;
-            fetchItems();
-          }}
-          disabled={loading}
-        >
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </Button>
-      </Box>
-      
-      <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>
-        Manage your kitchen items and track expiry dates
-      </Typography>
 
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+      <Box sx={{ background: theme.colors.paper, color: theme.colors.text, borderRadius: 2, boxShadow: 2, mb: 3, p: 3 }}>
+        <Grid container alignItems="center" spacing={2}>
+          <Grid item xs={12} sm={4} md={3}>
+            <Typography variant="h4" sx={{ fontWeight: 700, color: theme.colors.text }}>Inventory</Typography>
+          </Grid>
+          <Grid item xs={12} sm={8} md={9}>
+            <Box sx={{ display: 'flex', flexWrap: { xs: 'wrap', sm: 'nowrap' }, gap: 1, justifyContent: { xs: 'flex-start', sm: 'flex-end' }, alignItems: 'center' }}>
+              <Button onClick={() => navigate('/recipes')} variant="outlined" size="small" sx={{ color: theme.colors.text, borderColor: theme.colors.divider, '&:hover': { borderColor: theme.colors.primary, background: theme.colors.hover } }}>Suggested Recipes</Button>
+              <Button startIcon={<AddIcon />} variant="contained" color="primary" size="small" onClick={() => setDialogOpen(true)} sx={{ background: theme.colors.primary, color: theme.colors.text, '&:hover': { background: theme.colors.hover } }}>Add Item</Button>
+              <Button variant="outlined" onClick={() => { setLoading(true); setTimeout(() => setLoading(false), 500); }} disabled={loading} size="small" sx={{ color: theme.colors.text, borderColor: theme.colors.divider, '&:hover': { borderColor: theme.colors.primary, background: theme.colors.hover } }}>{loading ? 'Refreshing...' : 'Refresh'}</Button>
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+
+      <Typography variant="subtitle1" sx={{ color: theme.colors.textSecondary, mb: 3 }}>Manage your kitchen items and track expiry dates</Typography>
+
+      <Box sx={{ display: 'flex', gap: 2, mb: 3, borderRadius: 2}}>
         <TextField
           fullWidth
           placeholder="Search items..."
@@ -228,177 +122,149 @@ export default function InventoryPage() {
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon />
+                <SearchIcon sx={{ color: theme.colors.textSecondary }} />
               </InputAdornment>
             ),
           }}
+          sx={{ background: theme.colors.paper, color: theme.colors.text, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: theme.colors.divider }, '&:hover fieldset': { borderColor: theme.colors.primary } }, '& .MuiInputBase-input': { color: theme.colors.text } }}
         />
       </Box>
 
-      {/* Excel-like Table */}
-      <Box sx={{ width: '100%', overflowX: 'auto', mb: 4 }}>
-        <Box
-          component="table"
-          sx={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            minWidth: 600,
-            background: '#fff',
-            boxShadow: 1,
-            borderRadius: 2,
-            overflow: 'hidden',
-          }}
-        >
-          <Box component="thead" sx={{ background: '#f5f5f5' }}>
-            <Box component="tr">
-              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'left' }}>Name</Box>
-              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'left' }}>Quantity</Box>
-              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'left' }}>Unit</Box>
-              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'left' }}>Location</Box>
-              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'left' }}>Expiry</Box>
-              <Box component="th" sx={{ px: 2, py: 1, borderBottom: '1px solid #ddd', fontWeight: 700, textAlign: 'center' }}>Action</Box>
-            </Box>
-          </Box>
-          <Box component="tbody">
+      <Box sx={{ width: '100%', overflowX: 'auto', mb: 4, background: theme.colors.cardBg, borderRadius: 2, p: 2, boxShadow: 1 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
+          <thead>
+            <tr>
+              <th style={{ background: theme.colors.cardBg, color: theme.colors.text, fontWeight: 600, padding: '12px 16px', textAlign: 'left' }}>Name</th>
+              <th style={{ background: theme.colors.cardBg, color: theme.colors.text, fontWeight: 600, padding: '12px 16px', textAlign: 'left' }}>Quantity</th>
+              <th style={{ background: theme.colors.cardBg, color: theme.colors.text, fontWeight: 600, padding: '12px 16px', textAlign: 'left' }}>Unit</th>
+              <th style={{ background: theme.colors.cardBg, color: theme.colors.text, fontWeight: 600, padding: '12px 16px', textAlign: 'left' }}>Location</th>
+              <th style={{ background: theme.colors.cardBg, color: theme.colors.text, fontWeight: 600, padding: '12px 16px', textAlign: 'left' }}>Expiry</th>
+              <th style={{ background: theme.colors.cardBg, color: theme.colors.text, fontWeight: 600, padding: '12px 16px', textAlign: 'center' }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
             {loading ? (
-              <Box component="tr">
-                <Box component="td" colSpan={6} sx={{ textAlign: 'center', py: 4 }}>
-                  {/* Lottie animation for loading */}
-                  <Player
-                    autoplay
-                    loop
-                    src="/loading/GlowLoading.json" // <-- use JSON file, not .lottie
-                    style={{ height: 120, width: 120, margin: '0 auto' }}
-                  />
-                </Box>
-              </Box>
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', padding: 40 }}>
+                  <Typography variant="body1" sx={{ color: theme.colors.textSecondary }}>Loading...</Typography>
+                </td>
+              </tr>
             ) : (
               filteredItems.map(item => (
-                <Box component="tr" key={item.id} sx={{ borderBottom: '1px solid #eee', '&:hover': { background: '#fafafa' } }}>
-                  <Box component="td" sx={{ px: 2, py: 1 }}>{item.name}</Box>
-                  <Box component="td" sx={{ px: 2, py: 1 }}>{item.quantity}</Box>
-                  <Box component="td" sx={{ px: 2, py: 1 }}>{item.unit}</Box>
-                  <Box component="td" sx={{ px: 2, py: 1 }}>{item.location}</Box>
-                  <Box component="td" sx={{ px: 2, py: 1 }}>
+                <tr key={item.id} style={{ borderBottom: `1px solid ${theme.colors.border}`, transition: 'all 0.2s' }}>
+                  <td style={{ color: theme.colors.text, padding: '10px 16px' }}>{item.name}</td>
+                  <td style={{ color: theme.colors.text, padding: '10px 16px' }}>{item.quantity}</td>
+                  <td style={{ color: theme.colors.text, padding: '10px 16px' }}>{item.unit}</td>
+                  <td style={{ color: theme.colors.text, padding: '10px 16px' }}>{item.location}</td>
+                  <td style={{ color: theme.colors.text, padding: '10px 16px' }}>
                     {item.expiryDate && (
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: getExpiryStatus(item.expiryDate).color,
-                          bgcolor: `${getExpiryStatus(item.expiryDate).color}22`,
-                          px: 1,
-                          py: 0.5,
-                          borderRadius: 1,
-                          display: 'inline-block'
-                        }}
-                      >
+                      <Typography variant="body2" sx={{ color: getExpiryStatus(item.expiryDate).color, bgcolor: getExpiryStatus(item.expiryDate).color + '22', px: 1, py: 0.5, borderRadius: 1, display: 'inline-block' }}>
                         {getExpiryStatus(item.expiryDate).text}
                       </Typography>
                     )}
-                  </Box>
-                  <Box component="td" sx={{ px: 2, py: 1, textAlign: 'center' }}>
-                    <IconButton onClick={() => handleDelete(item.id)} size="small">
+                  </td>
+                  <td style={{ color: theme.colors.text, padding: '10px 16px', textAlign: 'center' }}>
+                    <IconButton onClick={() => handleDelete(item.id)} size="small" sx={{ color: theme.colors.textSecondary }}>
                       <DeleteIcon />
                     </IconButton>
-                  </Box>
-                </Box>
+                  </td>
+                </tr>
               ))
             )}
-          </Box>
-        </Box>
+          </tbody>
+        </table>
       </Box>
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Add New Item</DialogTitle>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { background: theme.colors.paper, color: theme.colors.text } }}>
+        <DialogTitle sx={{ color: theme.colors.text }}>Add New Item</DialogTitle>
         <form onSubmit={handleAdd}>
           <DialogContent>
             <Grid container spacing={2}>
-              <Grid gridColumn="span 12">
-                <SuggestionInput
+              <Grid item xs={12}>
+                <TextField
                   label="Name"
                   value={form.name}
-                  onChange={e => {
-                    setForm(f => ({
-                      ...f,
-                      name: e.target.value,
-                      // If suggestion includes category, auto-fill it
-                      category: e.category || f.category
-                    }));
-                  }}
+                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   required
+                  fullWidth
+                  sx={{ background: theme.colors.paper, color: theme.colors.text, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: theme.colors.divider }, '&:hover fieldset': { borderColor: theme.colors.primary } }, '& .MuiInputBase-input': { color: theme.colors.text } }}
                 />
               </Grid>
-              <Grid gridColumn="span 6">
+              <Grid item xs={6}>
                 <TextField
-                  fullWidth
                   label="Quantity"
                   type="number"
                   value={form.quantity}
-                  onChange={(e) => setForm(f => ({ ...f, quantity: e.target.value }))}
+                  onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
                   required
+                  fullWidth
+                  sx={{ background: theme.colors.paper, color: theme.colors.text, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: theme.colors.divider }, '&:hover fieldset': { borderColor: theme.colors.primary } }, '& .MuiInputBase-input': { color: theme.colors.text } }}
                 />
               </Grid>
-              <Grid gridColumn="span 6">
+              <Grid item xs={6}>
                 <FormControl fullWidth required>
                   <InputLabel>Unit</InputLabel>
                   <Select
                     value={form.unit}
                     label="Unit"
-                    onChange={(e) => setForm(f => ({ ...f, unit: e.target.value }))}
+                    onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
+                    sx={{ background: theme.colors.paper, color: theme.colors.text }}
                   >
                     {units.map(unit => (
-                      <MenuItem key={unit} value={unit}>{unit}</MenuItem>
+                      <MenuItem key={unit} value={unit} sx={{ color: theme.colors.text }}>{unit}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid gridColumn="span 12">
+              <Grid item xs={12}>
                 <FormControl fullWidth required>
                   <InputLabel>Location</InputLabel>
                   <Select
                     value={form.location}
                     label="Location"
-                    onChange={(e) => setForm(f => ({ ...f, location: e.target.value }))}
+                    onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                    sx={{ background: theme.colors.paper, color: theme.colors.text }}
                   >
                     {locations.map(loc => (
-                      <MenuItem key={loc} value={loc}>{loc}</MenuItem>
+                      <MenuItem key={loc} value={loc} sx={{ color: theme.colors.text }}>{loc}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid gridColumn="span 12">
+              <Grid item xs={12}>
                 <FormControl fullWidth required>
                   <InputLabel>Category</InputLabel>
                   <Select
                     value={form.category}
                     label="Category"
-                    onChange={(e) => setForm(f => ({ ...f, category: e.target.value }))}
+                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                    sx={{ background: theme.colors.paper, color: theme.colors.text }}
                   >
                     {categories.map(cat => (
-                      <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                      <MenuItem key={cat} value={cat} sx={{ color: theme.colors.text }}>{cat}</MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid gridColumn="span 12">
-                <LocalizationProvider dateAdapter={AdapterDateFns}>
-                  <DatePicker
-                    label="Expiry Date"
-                    value={form.expiryDate}
-                    onChange={(date) => setForm(f => ({ ...f, expiryDate: date }))}
-                    renderInput={(params) => <TextField {...params} fullWidth />}
-                  />
-                </LocalizationProvider>
+              <Grid item xs={12}>
+                <TextField
+                  label="Expiry Date"
+                  type="date"
+                  value={form.expiryDate || ''}
+                  onChange={e => setForm(f => ({ ...f, expiryDate: e.target.value }))}
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ background: theme.colors.paper, color: theme.colors.text, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: theme.colors.divider }, '&:hover fieldset': { borderColor: theme.colors.primary } }, '& .MuiInputBase-input': { color: theme.colors.text } }}
+                />
               </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" color="primary">Add Item</Button>
+            <Button onClick={() => setDialogOpen(false)} sx={{ color: theme.colors.text }}>Cancel</Button>
+            <Button type="submit" variant="contained" color="primary" sx={{ background: theme.colors.primary, color: theme.colors.text, '&:hover': { background: theme.colors.hover } }}>Add Item</Button>
           </DialogActions>
         </form>
       </Dialog>
     </Box>
-    </>
   );
 }
