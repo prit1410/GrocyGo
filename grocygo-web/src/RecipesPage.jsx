@@ -189,20 +189,26 @@ function RecipesPage({ forceOpenDialog }) {
 
   return (
     <Box sx={{ width: '100%', p: { xs: 1, md: 4 } }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" sx={{ flexGrow: 1 }}>Recipes</Typography>
-        <Button
-          variant="outlined"
-          color="secondary"
-          sx={{ mr: 2 }}
-          onClick={() => {
-            recipesCache = null;
-            inventoryCache = null;
-            setRecipesRefresh(r => r + 1);
-          }}
-        >Refresh</Button>
-        <Button variant="contained" color="primary" onClick={() => setDialogOpen(true)}>Add Recipe</Button>
-      </Box>
+      <Grid container alignItems="center" spacing={2} sx={{ mb: 3 }}>
+        <Grid item xs={12} sm={4}>
+          <Typography variant="h4" sx={{ mb: { xs: 1, sm: 0 } }}>Recipes</Typography>
+        </Grid>
+        <Grid item xs={12} sm={8}>
+          <Box sx={{ display: 'flex', flexWrap: { xs: 'wrap', sm: 'nowrap' }, gap: 1, justifyContent: { xs: 'flex-start', sm: 'flex-end' } }}>
+            <Button
+              variant="outlined"
+              color="secondary"
+              onClick={() => {
+                recipesCache = null;
+                inventoryCache = null;
+                setRecipesRefresh(r => r + 1);
+              }}
+              size="small"
+            >Refresh</Button>
+            <Button variant="contained" color="primary" onClick={() => setDialogOpen(true)} size="small">Add Recipe</Button>
+          </Box>
+        </Grid>
+      </Grid>
       <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>
         Save and manage your favorite recipes
       </Typography>
@@ -216,7 +222,7 @@ function RecipesPage({ forceOpenDialog }) {
               alignItems: 'center',
               justifyContent: 'center',
               minHeight: 320,
-              width: '100vw', // Ensure full width
+              width: '100vw',
               position: 'relative',
             }}>
               <Box sx={{
@@ -255,114 +261,118 @@ function RecipesPage({ forceOpenDialog }) {
             let matched = ingredientsArr.filter(ing => invNames.includes(ing));
             let missing = ingredientsArr.filter(ing => !invNames.includes(ing));
             return (
-              <Card
-                key={recipe.id}
-                sx={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  alignItems: 'stretch',
-                  mb: 2,
-                  borderRadius: 3,
-                  boxShadow: 2,
-                  overflow: 'hidden',
-                  background: '#fff',
-                }}
-              >
-                {/* Left: Image */}
-                <Box
+              <Grid item xs={12} sm={6} md={4} key={recipe.id}>
+                <Card
                   sx={{
-                    width: 200,
-                    aspectRatio: '1',
-                    background: '#f8f8f8',
                     display: 'flex',
-                    alignItems: 'stretch',
-                    justifyContent: 'center',
-                    borderRight: '1px solid #eee',
-                    flexShrink: 0,
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    alignItems: { xs: 'stretch', sm: 'stretch' },
+                    mb: 2,
+                    borderRadius: 3,
+                    boxShadow: 2,
                     overflow: 'hidden',
-                    height: 'auto',
+                    background: '#fff',
+                    height: '100%',
                   }}
                 >
-                  {recipe.recipe_image ? (
-                    <img
-                      src={recipe.recipe_image}
-                      alt={recipe.name}
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        display: 'block',
-                        aspectRatio: '1',
-                      }}
-                      onError={e => { e.target.style.display = 'none'; }}
-                    />
-                  ) : (
-                    <Box sx={{
-                      width: '100%',
+                  {/* Left: Image */}
+                  <Box
+                    sx={{
+                      width: { xs: '100%', sm: 140, md: 180 },
+                      minHeight: { xs: 140, sm: '100%' },
                       aspectRatio: '1',
+                      background: '#f8f8f8',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#bbb',
-                      fontSize: 32,
-                    }}>No Image</Box>
-                  )}
-                </Box>
-                {/* Right: Details */}
-                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minWidth: 0, overflow: 'hidden' }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{recipe.name}</Typography>
-                    <IconButton onClick={() => handleDelete(recipe.id)} size="small">
-                      <DeleteIcon />
-                    </IconButton>
+                      borderRight: { sm: '1px solid #eee', xs: 'none' },
+                      borderBottom: { xs: '1px solid #eee', sm: 'none' },
+                      flexShrink: 0,
+                      overflow: 'hidden',
+                      height: 'auto',
+                    }}
+                  >
+                    {recipe.recipe_image ? (
+                      <img
+                        src={recipe.recipe_image}
+                        alt={recipe.name}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                          aspectRatio: '1',
+                        }}
+                        onError={e => { e.target.style.display = 'none'; }}
+                      />
+                    ) : (
+                      <Box sx={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#bbb',
+                        fontSize: 32,
+                      }}>No Image</Box>
+                    )}
                   </Box>
-                  <Typography color="text.secondary">{recipe.description}</Typography>
-                  <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                    {recipe.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {recipe.course}</Typography>}
-                    {recipe.diet && <Typography variant="caption" color="secondary" sx={{ fontWeight: 600, bgcolor: '#fce4ec', px: 1, borderRadius: 1 }}>Diet: {recipe.diet}</Typography>}
-                  </Box>
-                  {Array.isArray(recipe.items) && recipe.items.length > 0 && (
-                    <Box sx={{ mb: 1 }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-                        {recipe.items.map((item, idx) => (
-                          <Box key={idx} sx={{ fontSize: 13, bgcolor: '#f5f5f5', px: 1, borderRadius: 1, mr: 0.5 }}>
-                            {item.name}
-                          </Box>
-                        ))}
+                  {/* Right: Details */}
+                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minWidth: 0, overflow: 'hidden' }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{recipe.name}</Typography>
+                      <IconButton onClick={() => handleDelete(recipe.id)} size="small">
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                    <Typography color="text.secondary">{recipe.description}</Typography>
+                    <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {recipe.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {recipe.course}</Typography>}
+                      {recipe.diet && <Typography variant="caption" color="secondary" sx={{ fontWeight: 600, bgcolor: '#fce4ec', px: 1, borderRadius: 1 }}>Diet: {recipe.diet}</Typography>}
+                    </Box>
+                    {Array.isArray(recipe.items) && recipe.items.length > 0 && (
+                      <Box sx={{ mb: 1 }}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                          {recipe.items.map((item, idx) => (
+                            <Box key={idx} sx={{ fontSize: 13, bgcolor: '#f5f5f5', px: 1, borderRadius: 1, mr: 0.5 }}>
+                              {item.name}
+                            </Box>
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                    <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', display: 'flex', alignItems: 'center' }}>
+                          <span role="img" aria-label="check" style={{ marginRight: 4 }}>✔️</span>
+                          You have ({matched.length}):
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                          {matched.length === 0 ? (
+                            <Typography variant="body2" color="text.secondary">None</Typography>
+                          ) : matched.map((ing, idx) => (
+                            <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
+                          ))}
+                        </Box>
+                      </Box>
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main', display: 'flex', alignItems: 'center' }}>
+                          <span role="img" aria-label="cross" style={{ marginRight: 4 }}>❌</span>
+                          Need to buy ({missing.length}):
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                          {missing.length === 0 ? (
+                            <Typography variant="body2" color="text.secondary">None</Typography>
+                          ) : missing.map((ing, idx) => (
+                            <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
+                          ))}
+                        </Box>
                       </Box>
                     </Box>
-                  )}
-                  <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', display: 'flex', alignItems: 'center' }}>
-                        <span role="img" aria-label="check" style={{ marginRight: 4 }}>✔️</span>
-                        You have ({matched.length}):
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                        {matched.length === 0 ? (
-                          <Typography variant="body2" color="text.secondary">None</Typography>
-                        ) : matched.map((ing, idx) => (
-                          <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
-                        ))}
-                      </Box>
-                    </Box>
-                    <Box>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main', display: 'flex', alignItems: 'center' }}>
-                        <span role="img" aria-label="cross" style={{ marginRight: 4 }}>❌</span>
-                        Need to buy ({missing.length}):
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                        {missing.length === 0 ? (
-                          <Typography variant="body2" color="text.secondary">None</Typography>
-                        ) : missing.map((ing, idx) => (
-                          <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
-                        ))}
-                      </Box>
-                    </Box>
                   </Box>
-                </Box>
-              </Card>
+                </Card>
+              </Grid>
             );
           })
         )}
@@ -393,20 +403,64 @@ function RecipesPage({ forceOpenDialog }) {
         inventoryItems={inventoryItems}
       />
       {/* AI Recipe Filters */}
-      <Box sx={{ mt: 4, mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
-        <Typography variant="h4" sx={{ mr: 2 }}>Suggested Recipes (AI)</Typography>
-        <Button variant="outlined" color="secondary" sx={{ mr: 2 }} onClick={() => {
-          aiSuggestCacheRef.current = {};
-          setSuggestRefresh(r => r + 1);
-        }}>Refresh</Button>
-        <select value={aiCourse} onChange={e => setAiCourse(e.target.value)} style={{ marginRight: 12 }}>
-          <option value="">All Courses</option>
-          {['Dinner','Lunch','Side Dish','South Indian Breakfast','Snack','Dessert','Appetizer','Main Course','World Breakfast','Indian Breakfast','North Indian Breakfast','One Pot Dish','Brunch'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
-        <select value={aiDiet} onChange={e => setAiDiet(e.target.value)}>
-          <option value="">All Diets</option>
-          {['Vegetarian','High Protein Vegetarian','Non Vegeterian','No Onion No Garlic (Sattvic)','High Protein Non Vegetarian','Diabetic Friendly','Eggetarian','Vegan','Gluten Free','Sugar Free Diet'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
+      <Box
+        sx={{
+          mt: 4,
+          mb: 2,
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2,
+          alignItems: { xs: 'stretch', sm: 'center' },
+          flexWrap: 'wrap',
+        }}
+      >
+        <Typography variant="h4" sx={{ mr: { xs: 0, sm: 2 }, mb: { xs: 1, sm: 0 } }}>Suggested Recipes (AI)</Typography>
+        <Button
+          variant="outlined"
+          color="secondary"
+          sx={{ mr: { xs: 0, sm: 2 }, mb: { xs: 1, sm: 0 }, minWidth: 120 }}
+          onClick={() => {
+            aiSuggestCacheRef.current = {};
+            setSuggestRefresh(r => r + 1);
+          }}
+        >Refresh</Button>
+        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, flex: 1 }}>
+          <select
+            value={aiCourse}
+            onChange={e => setAiCourse(e.target.value)}
+            style={{
+              marginRight: 0,
+              width: '100%',
+              maxWidth: 220,
+              minWidth: 120,
+              padding: 8,
+              borderRadius: 6,
+              border: '1px solid #ccc',
+              fontSize: 16,
+              marginBottom: 8,
+            }}
+          >
+            <option value="">All Courses</option>
+            {['Dinner','Lunch','Side Dish','South Indian Breakfast','Snack','Dessert','Appetizer','Main Course','World Breakfast','Indian Breakfast','North Indian Breakfast','One Pot Dish','Brunch'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
+          <select
+            value={aiDiet}
+            onChange={e => setAiDiet(e.target.value)}
+            style={{
+              width: '100%',
+              maxWidth: 220,
+              minWidth: 120,
+              padding: 8,
+              borderRadius: 6,
+              border: '1px solid #ccc',
+              fontSize: 16,
+              marginBottom: 8,
+            }}
+          >
+            <option value="">All Diets</option>
+            {['Vegetarian','High Protein Vegetarian','Non Vegeterian','No Onion No Garlic (Sattvic)','High Protein Non Vegetarian','Diabetic Friendly','Eggetarian','Vegan','Gluten Free','Sugar Free Diet'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
+        </Box>
       </Box>
       <Box>
         {suggestLoading ? (
@@ -423,7 +477,7 @@ function RecipesPage({ forceOpenDialog }) {
           }
           // List view: image left, details right, vertical stack
           return (
-            <Box>
+            <Grid container spacing={2}>
               {safeRecipes.map((r, i) => {
                 // Parse ingredients string to array
                 let ingredientsArr = [];
@@ -438,123 +492,127 @@ function RecipesPage({ forceOpenDialog }) {
                   missing = ingredientsArr.filter(ing => !invNames.includes(ing.toLowerCase()));
                 }
                 return (
-                  <Card
-                    key={i}
-                    sx={{
-                      display: 'flex',
-                      flexDirection: 'row',
-                      alignItems: 'stretch',
-                      mb: 2,
-                      borderRadius: 3,
-                      boxShadow: 2,
-                      overflow: 'hidden',
-                      background: '#fff',
-                    }}
-                  >
-                    {/* Left: Image */}
-                    <Box
+                  <Grid item xs={12} sm={6} md={4} key={i}>
+                    <Card
                       sx={{
-                        width: 400, // Set a base width
-                        aspectRatio: '1', // Make it square
-                        background: '#f8f8f8',
                         display: 'flex',
-                        alignItems: 'stretch',
-                        justifyContent: 'center',
-                        borderRight: '1px solid #eee',
-                        flexShrink: 0,
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        alignItems: { xs: 'stretch', sm: 'stretch' },
+                        mb: 2,
+                        borderRadius: 3,
+                        boxShadow: 2,
                         overflow: 'hidden',
-                        height: 'auto', // Let height be determined by content
+                        background: '#fff',
+                        height: '100%',
                       }}
                     >
-                      {r.recipe_image ? (
-                        <img
-                          src={r.recipe_image}
-                          alt={r.recipe_title}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            display: 'block',
-                            aspectRatio: '1', // Ensure image is square
-                          }}
-                          onError={e => { e.target.style.display = 'none'; }}
-                        />
-                      ) : (
-                        <Box sx={{
-                          width: '100%',
+                      {/* Left: Image */}
+                      <Box
+                        sx={{
+                          width: { xs: '100%', sm: 140, md: 180 },
+                          minHeight: { xs: 140, sm: '100%' },
                           aspectRatio: '1',
+                          background: '#f8f8f8',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: '#bbb',
-                          fontSize: 32,
-                        }}>No Image</Box>
-                      )}
-                    </Box>
-                    {/* Right: Details */}
-                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minWidth: 0, overflow: 'hidden' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.recipe_title}</Typography>
-                      <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                        {r.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {r.course}</Typography>}
-                        {r.diet && <Typography variant="caption" color="secondary" sx={{ fontWeight: 600, bgcolor: '#fce4ec', px: 1, borderRadius: 1 }}>Diet: {r.diet}</Typography>}
+                          borderRight: { sm: '1px solid #eee', xs: 'none' },
+                          borderBottom: { xs: '1px solid #eee', sm: 'none' },
+                          flexShrink: 0,
+                          overflow: 'hidden',
+                          height: 'auto',
+                        }}
+                      >
+                        {r.recipe_image ? (
+                          <img
+                            src={r.recipe_image}
+                            alt={r.recipe_title}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                              display: 'block',
+                              aspectRatio: '1',
+                            }}
+                            onError={e => { e.target.style.display = 'none'; }}
+                          />
+                        ) : (
+                          <Box sx={{
+                            width: '100%',
+                            aspectRatio: '1',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#bbb',
+                            fontSize: 32,
+                          }}>No Image</Box>
+                        )}
                       </Box>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        <b>Prep time:</b> {r.prep_time}
-                      </Typography>
-                      {r.ingredients && (
-                        <Box sx={{ mb: 1 }}>
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-                            {r.ingredients.split('|').map((ing, idx) => (
-                              <Box key={idx} sx={{ fontSize: 13, bgcolor: '#f5f5f5', px: 1, borderRadius: 1, mr: 0.5 }}>{ing.trim()}</Box>
-                            ))}
+                      {/* Right: Details */}
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minWidth: 0, overflow: 'hidden' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.recipe_title}</Typography>
+                        <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          {r.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {r.course}</Typography>}
+                          {r.diet && <Typography variant="caption" color="secondary" sx={{ fontWeight: 600, bgcolor: '#fce4ec', px: 1, borderRadius: 1 }}>Diet: {r.diet}</Typography>}
+                        </Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          <b>Prep time:</b> {r.prep_time}
+                        </Typography>
+                        {r.ingredients && (
+                          <Box sx={{ mb: 1 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                              {r.ingredients.split('|').map((ing, idx) => (
+                                <Box key={idx} sx={{ fontSize: 13, bgcolor: '#f5f5f5', px: 1, borderRadius: 1, mr: 0.5 }}>{ing.trim()}</Box>
+                              ))}
+                            </Box>
+                          </Box>
+                        )}
+                        <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', display: 'flex', alignItems: 'center' }}>
+                              <span role="img" aria-label="check" style={{ marginRight: 4 }}>✔️</span>
+                              You have ({matched.length}):
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                              {matched.length === 0 ? (
+                                <Typography variant="body2" color="text.secondary">None</Typography>
+                              ) : matched.map((ing, idx) => (
+                                <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
+                              ))}
+                            </Box>
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main', display: 'flex', alignItems: 'center' }}>
+                              <span role="img" aria-label="cross" style={{ marginRight: 4 }}>❌</span>
+                              Need to buy ({missing.length}):
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                              {missing.length === 0 ? (
+                                <Typography variant="body2" color="text.secondary">None</Typography>
+                              ) : missing.map((ing, idx) => (
+                                <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
+                              ))}
+                            </Box>
                           </Box>
                         </Box>
-                      )}
-                      <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', display: 'flex', alignItems: 'center' }}>
-                            <span role="img" aria-label="check" style={{ marginRight: 4 }}>✔️</span>
-                            You have ({matched.length}):
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                            {matched.length === 0 ? (
-                              <Typography variant="body2" color="text.secondary">None</Typography>
-                            ) : matched.map((ing, idx) => (
-                              <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
-                            ))}
-                          </Box>
-                        </Box>
-                        <Box>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main', display: 'flex', alignItems: 'center' }}>
-                            <span role="img" aria-label="cross" style={{ marginRight: 4 }}>❌</span>
-                            Need to buy ({missing.length}):
-                          </Typography>
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
-                            {missing.length === 0 ? (
-                              <Typography variant="body2" color="text.secondary">None</Typography>
-                            ) : missing.map((ing, idx) => (
-                              <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
-                            ))}
-                          </Box>
+                        <Box sx={{ mt: 'auto', display: 'flex' }}>
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            fullWidth
+                            sx={{ fontWeight: 600, fontSize: 15, borderRadius: 2 }}
+                            onClick={() => handleSaveToMyRecipes(r)}
+                          >
+                            Save to My Recipes
+                          </Button>
                         </Box>
                       </Box>
-                      <Box sx={{ mt: 'auto', display: 'flex' }}>
-                        <Button
-                          variant="outlined"
-                          color="primary"
-                          fullWidth
-                          sx={{ fontWeight: 600, fontSize: 15, borderRadius: 2 }}
-                          onClick={() => handleSaveToMyRecipes(r)}
-                        >
-                          Save to My Recipes
-                        </Button>
-                      </Box>
-                    </Box>
-                  </Card>
+                    </Card>
+                  </Grid>
                 );
               })}
-            </Box>
+            </Grid>
           );
         })()}
       </Box>

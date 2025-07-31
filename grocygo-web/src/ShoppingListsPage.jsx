@@ -213,30 +213,64 @@ export default function ShoppingListsPage() {
   const completed = 0;
   const estimatedTotal = lists.reduce((sum, item) => sum + (item.price || 0), 0);
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', background: '#f8fcf7', minHeight: '100vh', padding: 32 }}>
-        <div style={{ flex: 2 }}>
-          <h1>Shopping Lists</h1>
+    <div className="shopping-page-root">
+      <style>{`
+        .shopping-page-root {
+          background: #fff;
+          min-height: 100vh;
+        }
+        .shopping-layout {
+          display: flex;
+          gap: 32px;
+          padding: 32px;
+          max-width: 1400px;
+          margin: 0 auto;
+          box-sizing: border-box;
+        }
+        @media (max-width: 1024px) {
+          .shopping-layout {
+            flex-direction: column;
+            padding: 16px;
+            gap: 16px;
+          }
+        }
+      `}</style>
+      <div className="shopping-layout">
+        <div style={{ flex: '1 1 auto', minWidth: 0, maxWidth: '100%' }}>
+          <h1 style={{ margin: '0 0 8px 0' }}>Shopping Lists</h1>
           <div style={{ color: '#666', marginBottom: 24 }}>Smart shopping lists based on your inventory and meal plans</div>
           <Box sx={{
-            background: '#fff', borderRadius: 3, p: 3, boxShadow: '0 2px 8px #0001', mb: 3
+            background: '#fff',
+            borderRadius: 2,
+            p: { xs: 2, sm: 3 },
+            boxShadow: '0 2px 8px #0001',
+            mb: 3,
+            border: '1px solid #eee'
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <h2 style={{ margin: 0, flex: 1 }}>Shopping List</h2>
-              <span style={{ color: '#888', fontSize: 14 }}>{completed}/{lists.length} completed</span>
-              <Button
-                variant="outlined"
-                sx={{ ml: 2 }}
-                onClick={() => setDialogOpen(true)}
-              >+ Add</Button>
-              <Button
-                variant="outlined"
-                sx={{ ml: 2 }}
-                onClick={fetchLists}
-                disabled={loading}
-              >
-                {loading ? 'Refreshing...' : 'Refresh'}
-              </Button>
+            <Box sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              gap: 2,
+              mb: 2
+            }}>
+              <h2 style={{ margin: 0, flex: 1, minWidth: '200px' }}>Shopping List</h2>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ color: '#888', fontSize: 14 }}>{completed}/{lists.length} completed</span>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => setDialogOpen(true)}
+                >+ Add</Button>
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={fetchLists}
+                  disabled={loading}
+                >
+                  {loading ? 'Refreshing...' : 'Refresh'}
+                </Button>
+              </Box>
             </Box>
             <div style={{ color: '#888', marginBottom: 8 }}>Estimated total: ${estimatedTotal.toFixed(2)}</div>
             <form onSubmit={e => { e.preventDefault(); setDialogOpen(true); }}>
@@ -277,17 +311,32 @@ export default function ShoppingListsPage() {
                       return acc;
                     }, {})).map(list => (
                       <li key={list.name + '|' + list.unit + '|' + list.category} style={{
-                        display: 'flex', alignItems: 'center', borderBottom: '1px solid #f0f0f0', padding: '12px 0'
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: '8px',
+                        borderBottom: '1px solid #f0f0f0',
+                        padding: '12px 0'
                       }}>
-                        <div style={{ flex: 1 }}>
-                          <span style={{ fontWeight: 500 }}>{list.name}</span>
-                          <span style={{ color: '#888', marginLeft: 8 }}>
+                        <div style={{ flex: '1 1 250px', minWidth: 0 }}>
+                          <div style={{ 
+                            fontWeight: 500,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                          }}>{list.name}</div>
+                          <div style={{ 
+                            color: '#888',
+                            fontSize: '0.9em',
+                            marginTop: '4px'
+                          }}>
                             {list.quantity} {list.unit} {list.category && `| ${list.category}`}
-                          </span>
+                          </div>
                         </div>
                         <Button
                           variant="text"
                           color="error"
+                          size="small"
                           onClick={() => handleDelete(list.id)}
                         >Delete</Button>
                       </li>
@@ -298,15 +347,25 @@ export default function ShoppingListsPage() {
             )}
           </Box>
         </div>
-        <div style={{ flex: 1,
+        <div style={{
+          flex: '0 0 380px',
           background: '#fff',
           borderRadius: 12,
           padding: 24,
           boxShadow: '0 2px 8px #0001',
-          minWidth: 320
+          minWidth: 280,
+          maxWidth: '100%',
+          alignSelf: 'flex-start',
+          position: 'sticky',
+          top: 32,
+          border: '1px solid #eee',
+          boxSizing: 'border-box',
+          height: 'max-content',
+          maxHeight: 'calc(100vh - 64px)',
+          overflowY: 'auto'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-            <h2 style={{ margin: 0, flex: 1 }}>Smart Suggestions</h2>
+          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 16 }}>
+            <h2 style={{ margin: 0, flex: 1, fontSize: '1.5rem' }}>Smart Suggestions</h2>
           </div>
           <Button
             variant="contained"
@@ -358,23 +417,42 @@ export default function ShoppingListsPage() {
                   <div key={displayName + idx} style={{
                     border: '1px solid #eee',
                     borderRadius: 8,
-                    padding: 16,
-                    marginBottom: 16,
+                    padding: '12px 16px',
+                    marginBottom: 12,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 12
+                    gap: 12,
+                    background: '#f8f8f8',
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer',
+                    ':hover': {
+                      background: '#f0f0f0'
+                    }
                   }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600 }}>{displayName}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ 
+                        fontWeight: 600,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>{displayName}</div>
                       {neededForDisplay && (
-                        <div style={{ fontSize: 12, color: '#888', marginBottom: 4 }}>
+                        <div style={{ 
+                          fontSize: 12,
+                          color: '#666',
+                          marginTop: 4,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
                           Needed for: {neededForDisplay}
                         </div>
                       )}
                     </div>
                     <Button
                       variant="outlined"
-                      sx={{ minWidth: 40, p: 0 }}
+                      size="small"
+                      sx={{ minWidth: 32, height: 32, p: 0 }}
                       onClick={() => handleAddFromSuggestion(item)}
                     >+</Button>
                   </div>

@@ -4,6 +4,8 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, BarChart, Bar, PieChart, Pie, Cell, ResponsiveContainer
 } from 'recharts';
+import { useTheme } from './ThemeContext';
+import ThemeToggle from './components/ThemeToggle';
 import CategoryListDialog from './CategoryListDialog';
 import { Box, Paper, Typography, IconButton, Avatar, Grid, Button, Divider } from '@mui/material';
 import BarChartIcon from '@mui/icons-material/BarChart';
@@ -26,11 +28,35 @@ async function fetchAnalytics(endpoint) {
     });
   }
   const token = await user.getIdToken();
-  const res = await fetch(`${API_BASE}/${endpoint}`, {
-    credentials: 'include',
-    headers: { Authorization: `Bearer ${token}` }
-  });
-  return await res.json();
+  try {
+    const res = await fetch(`${API_BASE}/${endpoint}`, {
+      credentials: 'include',
+      headers: { 
+        Authorization: `Bearer ${token}`,
+        'x-api-key': process.env.REACT_APP_API_KEY || '' // Add API key if required
+      }
+    });
+    
+    if (!res.ok) {
+      console.error(`API Error (${endpoint}):`, res.status, res.statusText);
+      return [];
+    }
+
+    const data = await res.json();
+    console.log(`API Response (${endpoint}):`, data); // Log the response data
+    
+    if (data.error) {
+      console.error(`API Error (${endpoint}):`, data.error);
+      return [];
+    }
+    
+    // Check if data.data exists (common API response structure)
+    const responseData = data.data || data;
+    return Array.isArray(responseData) ? responseData : [];
+  } catch (error) {
+    console.error(`Error fetching ${endpoint}:`, error);
+    return [];
+  }
 }
 
 
@@ -45,6 +71,9 @@ export default function AnalyticsPage() {
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [categoryDialogItems, setCategoryDialogItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const theme = useTheme();
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);
@@ -52,12 +81,51 @@ export default function AnalyticsPage() {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      fetchAnalytics('inventory-usage').then(setInventoryUsage);
-      fetchAnalytics('expiry-stats').then(setExpiryStats);
-      fetchAnalytics('shopping-trends').then(setShoppingTrends);
-      fetchAnalytics('category-stats').then(setCategoryStats);
+    async function fetchAllAnalytics() {
+      if (!user) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Fetch all data in parallel
+        const [
+          inventoryData,
+          expiryData,
+          shoppingData,
+          categoryData
+        ] = await Promise.all([
+          fetchAnalytics('inventory-usage'),
+          fetchAnalytics('expiry-stats'),
+          fetchAnalytics('shopping-trends'),
+          fetchAnalytics('category-stats')
+        ]);
+
+        console.log('Fetched all analytics data:', {
+          inventoryData,
+          expiryData,
+          shoppingData,
+          categoryData
+        });
+
+        setInventoryUsage(inventoryData);
+        setExpiryStats(expiryData);
+        setShoppingTrends(shoppingData);
+        setCategoryStats(categoryData);
+      } catch (err) {
+        console.error('Error fetching analytics:', err);
+        setError(err.message || 'Failed to load analytics data');
+        // Set empty arrays for all data
+        setInventoryUsage([]);
+        setExpiryStats([]);
+        setShoppingTrends([]);
+        setCategoryStats([]);
+      } finally {
+        setLoading(false);
+      }
     }
+
+    fetchAllAnalytics();
   }, [user]);
 
   const handleCategoryClick = async (cat) => {
@@ -87,23 +155,34 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: '#0a192f', py: 4, px: { xs: 1, md: 4 } }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: theme.colors.background, py: 4, px: { xs: 1, md: 4 } }}>
       <Box sx={{ width: '100%', maxWidth: '100%', mx: 'auto', p: 0, bgcolor: 'transparent', boxShadow: 'none', borderRadius: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', mb: 4, justifyContent: 'space-between', px: { xs: 1, md: 4 } }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Avatar sx={{ bgcolor: '#1f4068', width: 56, height: 56, fontWeight: 700, fontSize: 28 }}>G</Avatar>
+            <Avatar sx={{ bgcolor: theme.colors.primary, width: 56, height: 56, fontWeight: 700, fontSize: 28 }}>G</Avatar>
             <Box>
-              <Typography variant="h4" sx={{ color: '#fff', fontWeight: 700, letterSpacing: 1 }}>GrocyGo Analytics</Typography>
-              <Typography variant="subtitle2" sx={{ color: '#bfc9d1', fontWeight: 400 }}>Futuristic Kitchen Insights</Typography>
+              <Typography variant="h4" sx={{ color: theme.colors.text, fontWeight: 700, letterSpacing: 1 }}>GrocyGo Analytics</Typography>
+              <Typography variant="subtitle2" sx={{ color: theme.colors.textSecondary, fontWeight: 400 }}>Futuristic Kitchen Insights</Typography>
             </Box>
           </Box>
-          {/* Logout button removed as requested */}
+          <ThemeToggle />
         </Box>
         <Grid container spacing={4} sx={{ px: { xs: 1, md: 4 } }}>
+          {error && (
+            <Grid item xs={12}>
+              <Paper elevation={4} sx={{ p: 3, borderRadius: 4, bgcolor: '#232b3e', mb: 4 }}>
+                <Typography sx={{ color: '#ff4444', textAlign: 'center' }}>
+                  Error loading analytics: {error}
+                </Typography>
+              </Paper>
+            </Grid>
+          )}
           <Grid item xs={12} md={4}>
             <Paper elevation={4} sx={{ p: 3, borderRadius: 4, bgcolor: '#232b3e', minHeight: 420, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
               <Typography variant="h6" sx={{ color: '#fff', mb: 2, fontWeight: 600 }}>Groceries by Category</Typography>
-              {Array.isArray(categoryStats) && categoryStats.length > 0 ? (
+              {loading ? (
+                <Typography sx={{ color: '#bfc9d1', textAlign: 'center', mt: 4 }}>Loading category data...</Typography>
+              ) : Array.isArray(categoryStats) && categoryStats.length > 0 ? (
                 <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
                     <Pie

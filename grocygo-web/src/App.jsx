@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-
-import { ThemeProvider, createTheme, CssBaseline, AppBar, Toolbar, Typography, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, Box, Container, Button } from '@mui/material';
+import { ThemeProvider as MuiThemeProvider, createTheme, CssBaseline, AppBar, Toolbar, Typography, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, Box, Container, Button } from '@mui/material';
+import { ThemeProvider, useTheme } from './ThemeContext';
 import MenuIcon from '@mui/icons-material/Menu';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
@@ -22,42 +22,17 @@ import AuthPage from './AuthPage';
 import Footer from './Footer';
 import { auth } from './firebase';
 
-function PagesWrapper() {
-  const location = useLocation();
-  const [forceOpenRecipeDialog, setForceOpenRecipeDialog] = React.useState(false);
-  // Use a ref to avoid infinite loop when switching tab
-  const hasSwitchedTab = React.useRef(false);
-  React.useEffect(() => {
-    // Auto-switch tab if requested
-    if (localStorage.getItem('switchToRecipesTab') === '1' && !hasSwitchedTab.current) {
-      window.location.pathname = '/recipes';
-      localStorage.removeItem('switchToRecipesTab');
-      hasSwitchedTab.current = true;
-      return;
-    }
-    if (location.pathname === '/recipes' && localStorage.getItem('openAddRecipeDialog') === '1') {
-      setForceOpenRecipeDialog(true);
-      localStorage.removeItem('openAddRecipeDialog');
-      hasSwitchedTab.current = false;
-    } else {
-      setForceOpenRecipeDialog(false);
-    }
-  }, [location]);
-  switch (location.pathname) {
-    case '/recipes':
-      return <RecipesPage forceOpenDialog={forceOpenRecipeDialog} />;
-    case '/meal-plans':
-      return <MealPlansPage />;
-    case '/shopping-lists':
-      return <ShoppingListsPage />;
-    case '/notifications':
-      return <NotificationsPage />;
-    case '/analytics':
-      return <AnalyticsPage />;
-    default:
-      return <InventoryPage />;
-  }
-}
+const App = () => {
+  return (
+    <ThemeProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ThemeProvider>
+  );
+};
+
+export default App;
 
 const pages = [
   { name: 'Inventory', icon: <InventoryIcon /> },
@@ -76,30 +51,52 @@ const glassBg = {
   border: '1px solid rgba(255,255,255,0.18)',
 };
 
-export default function App() {
+function PagesWrapper() {
+  const location = useLocation();
+  const [forceOpenRecipeDialog, setForceOpenRecipeDialog] = React.useState(false);
+  // Use a ref to avoid infinite loop when switching tab
+  const hasSwitchedTab = React.useRef(false);
+  
+  React.useEffect(() => {
+    // Auto-switch tab if requested
+    if (localStorage.getItem('switchToRecipesTab') === '1' && !hasSwitchedTab.current) {
+      window.location.pathname = '/recipes';
+      localStorage.removeItem('switchToRecipesTab');
+      hasSwitchedTab.current = true;
+      return;
+    }
+    if (location.pathname === '/recipes' && localStorage.getItem('openAddRecipeDialog') === '1') {
+      setForceOpenRecipeDialog(true);
+      localStorage.removeItem('openAddRecipeDialog');
+      hasSwitchedTab.current = false;
+    } else {
+      setForceOpenRecipeDialog(false);
+    }
+  }, [location]);
+
+  switch (location.pathname) {
+    case '/recipes':
+      return <RecipesPage forceOpenDialog={forceOpenRecipeDialog} />;
+    case '/meal-plans':
+      return <MealPlansPage />;
+    case '/shopping-lists':
+      return <ShoppingListsPage />;
+    case '/notifications':
+      return <NotificationsPage />;
+    case '/analytics':
+      return <AnalyticsPage />;
+    default:
+      return <InventoryPage />;
+  }
+}
+
+const AppContent = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
   const [showHero, setShowHero] = useState(true);
   const [authed, setAuthed] = useState(!!auth.currentUser);
-
-  const theme = createTheme({
-    palette: {
-      mode: darkMode ? 'dark' : 'light',
-      primary: { main: '#4caf50' },
-      secondary: { main: '#2196f3' },
-      background: {
-        default: darkMode
-          ? 'linear-gradient(135deg, #232526 0%, #414345 100%)'
-          : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        paper: darkMode ? '#232526' : '#fff',
-      },
-    },
-    typography: {
-      fontFamily: 'Poppins, Roboto, Arial, sans-serif',
-    },
-  });
+  const { isDarkMode, toggleTheme, colors } = useTheme();
 
   // Listen for auth state changes
   React.useEffect(() => {
@@ -110,53 +107,53 @@ export default function App() {
   // Show hero if not authenticated and not on auth page
   if (!authed && showHero) {
     return (
-      <ThemeProvider theme={theme}>
+      <>
         <CssBaseline />
-        <Box sx={{ minHeight: '100vh', background: theme.palette.background.default }}>
+        <Box sx={{ minHeight: '100vh', background: colors.background }}>
           <AppBar position="sticky" color="transparent" elevation={0} sx={{ backdropFilter: 'blur(12px)', background: 'rgba(30,34,45,0.7)' }}>
             <Toolbar>
               <Typography variant="h5" sx={{ flexGrow: 1, fontWeight: 700, letterSpacing: 1 }}>
                 GrocyGo
               </Typography>
-              <IconButton sx={{ ml: 1 }} onClick={() => setDarkMode(m => !m)} color="inherit">
-                {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+              <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit">
+                {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
             </Toolbar>
           </AppBar>
           <Hero onGetStarted={() => setShowHero(false)} />
         </Box>
-      </ThemeProvider>
+      </>
     );
   }
 
   // Show auth page if not authenticated
   if (!authed) {
     return (
-      <ThemeProvider theme={theme}>
+      <>
         <CssBaseline />
-        <Box sx={{ minHeight: '100vh', background: theme.palette.background.default }}>
+        <Box sx={{ minHeight: '100vh', background: colors.background }}>
           <AppBar position="sticky" color="transparent" elevation={0} sx={{ backdropFilter: 'blur(12px)', background: 'rgba(30,34,45,0.7)' }}>
             <Toolbar>
               <Typography variant="h5" sx={{ flexGrow: 1, fontWeight: 700, letterSpacing: 1 }}>
                 GrocyGo
               </Typography>
-              <IconButton sx={{ ml: 1 }} onClick={() => setDarkMode(m => !m)} color="inherit">
-                {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+              <IconButton sx={{ ml: 1 }} onClick={toggleTheme} color="inherit">
+                {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
             </Toolbar>
           </AppBar>
           <AuthPage onAuth={() => setAuthed(true)} />
         </Box>
-      </ThemeProvider>
+      </>
     );
   }
 
   return (
-    <ThemeProvider theme={theme}>
+    <>
       <CssBaseline />
-      <Box sx={{ minHeight: '100vh', background: theme.palette.background.default, display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ minHeight: '100vh', background: colors.background, display: 'flex', flexDirection: 'column' }}>
         {/* Top Navigation Bar */}
-        <AppBar position="static" color="default" elevation={1} sx={{ bgcolor: 'background.paper', borderBottom: '1px solid #e0e0e0' }}>
+        <AppBar position="static" color="default" elevation={1} sx={{ bgcolor: colors.paper, borderBottom: `1px solid ${colors.divider}` }}>
           <Container maxWidth="lg">
             <Toolbar disableGutters sx={{ minHeight: 64 }}>
               <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
@@ -175,15 +172,15 @@ export default function App() {
                 />
               </Box>
               <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2 }}>
-                <Button color={location.pathname === '/' ? 'primary' : 'inherit'} onClick={() => navigate('/')} sx={{ fontWeight: 600 }}>Inventory</Button>
-                <Button color={location.pathname === '/recipes' ? 'primary' : 'inherit'} onClick={() => navigate('/recipes')} sx={{ fontWeight: 600 }}>Recipes</Button>
-                <Button color={location.pathname === '/meal-plans' ? 'primary' : 'inherit'} onClick={() => navigate('/meal-plans')} sx={{ fontWeight: 600 }}>Meal Plans</Button>
-                <Button color={location.pathname === '/shopping-lists' ? 'primary' : 'inherit'} onClick={() => navigate('/shopping-lists')} sx={{ fontWeight: 600 }}>Shopping Lists</Button>
-                <Button color={location.pathname === '/notifications' ? 'primary' : 'inherit'} onClick={() => navigate('/notifications')} sx={{ fontWeight: 600 }}>Notifications</Button>
-                <Button color={location.pathname === '/analytics' ? 'primary' : 'inherit'} onClick={() => navigate('/analytics')} sx={{ fontWeight: 600 }}>Analytics</Button>
+                <Button color={location.pathname === '/' ? 'primary' : 'inherit'} onClick={() => navigate('/')} sx={{ fontWeight: 600, color: colors.text }}>Inventory</Button>
+                <Button color={location.pathname === '/recipes' ? 'primary' : 'inherit'} onClick={() => navigate('/recipes')} sx={{ fontWeight: 600, color: colors.text }}>Recipes</Button>
+                <Button color={location.pathname === '/meal-plans' ? 'primary' : 'inherit'} onClick={() => navigate('/meal-plans')} sx={{ fontWeight: 600, color: colors.text }}>Meal Plans</Button>
+                <Button color={location.pathname === '/shopping-lists' ? 'primary' : 'inherit'} onClick={() => navigate('/shopping-lists')} sx={{ fontWeight: 600, color: colors.text }}>Shopping Lists</Button>
+                <Button color={location.pathname === '/notifications' ? 'primary' : 'inherit'} onClick={() => navigate('/notifications')} sx={{ fontWeight: 600, color: colors.text }}>Notifications</Button>
+                <Button color={location.pathname === '/analytics' ? 'primary' : 'inherit'} onClick={() => navigate('/analytics')} sx={{ fontWeight: 600, color: colors.text }}>Analytics</Button>
               </Box>
-              <IconButton sx={{ ml: 2 }} onClick={() => setDarkMode(m => !m)} color="inherit">
-                {darkMode ? <Brightness7Icon /> : <Brightness4Icon />}
+              <IconButton sx={{ ml: 2 }} onClick={toggleTheme} color="inherit">
+                {isDarkMode ? <Brightness7Icon /> : <Brightness4Icon />}
               </IconButton>
               <IconButton sx={{ ml: 1, display: { md: 'none' } }} onClick={() => setDrawerOpen(true)} color="inherit">
                 <MenuIcon />
@@ -193,7 +190,7 @@ export default function App() {
         </AppBar>
         {/* Drawer for mobile navigation */}
         <Drawer anchor="left" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
-          <Box sx={{ width: 250, pt: 2 }}>
+          <Box sx={{ width: 250, pt: 2, background: colors.paper, color: colors.text }}>
             <Typography variant="h6" align="center" sx={{ mb: 2, fontWeight: 700 }}>Menu</Typography>
             <List>
               <ListItem button selected={location.pathname === '/'} onClick={() => { navigate('/'); setDrawerOpen(false); }}>
@@ -237,6 +234,6 @@ export default function App() {
         {/* Footer */}
         <Footer />
       </Box>
-    </ThemeProvider>
+    </>
   );
 }
