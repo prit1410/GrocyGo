@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "90041522201",
+    "firebase_url": "https://grocygo-c9820-default-rtdb.firebaseio.com",
+    "project_id": "grocygo-c9820",
+    "storage_bucket": "grocygo-c9820.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:90041522201:android:3bf7d9b0e0ea006f73b288",
+        "android_client_info": {
+          "package_name": "com.example.grocygo"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCHh5cyU-ochWIgS6SDsNQjDgfEiyjNYNU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

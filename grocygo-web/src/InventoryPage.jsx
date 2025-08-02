@@ -220,85 +220,157 @@ export default function InventoryPage() {
         <DialogTitle sx={{ color: theme.colors.text }}>Add New Item</DialogTitle>
         <form onSubmit={handleAdd}>
           <DialogContent>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
-                <TextField
-                  label="Name"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  required
-                  fullWidth
-                  sx={{ background: theme.colors.paper, color: theme.colors.text, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: theme.colors.divider }, '&:hover fieldset': { borderColor: theme.colors.primary } }, '& .MuiInputBase-input': { color: theme.colors.text } }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Quantity"
-                  type="number"
-                  value={form.quantity}
-                  onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
-                  required
-                  fullWidth
-                  sx={{ background: theme.colors.paper, color: theme.colors.text, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: theme.colors.divider }, '&:hover fieldset': { borderColor: theme.colors.primary } }, '& .MuiInputBase-input': { color: theme.colors.text } }}
-                />
-              </Grid>
-              <Grid item xs={6}>
-                <FormControl fullWidth required>
-                  <InputLabel>Unit</InputLabel>
-                  <Select
-                    value={form.unit}
-                    label="Unit"
-                    onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
-                    sx={{ background: theme.colors.paper, color: theme.colors.text }}
-                  >
-                    {units.map(unit => (
-                      <MenuItem key={unit} value={unit} sx={{ color: theme.colors.text }}>{unit}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <FormControl fullWidth required>
-                  <InputLabel>Location</InputLabel>
-                  <Select
-                    value={form.location}
-                    label="Location"
-                    onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
-                    sx={{ background: theme.colors.paper, color: theme.colors.text }}
-                  >
-                    {locations.map(loc => (
-                      <MenuItem key={loc} value={loc} sx={{ color: theme.colors.text }}>{loc}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <FormControl fullWidth required>
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={form.category}
-                    label="Category"
-                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                    sx={{ background: theme.colors.paper, color: theme.colors.text }}
-                  >
-                    {categories.map(cat => (
-                      <MenuItem key={cat} value={cat} sx={{ color: theme.colors.text }}>{cat}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  label="Expiry Date"
-                  type="date"
-                  value={form.expiryDate || ''}
-                  onChange={e => setForm(f => ({ ...f, expiryDate: e.target.value }))}
-                  fullWidth
-                  InputLabelProps={{ shrink: true }}
-                  sx={{ background: theme.colors.paper, color: theme.colors.text, '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: theme.colors.divider }, '&:hover fieldset': { borderColor: theme.colors.primary } }, '& .MuiInputBase-input': { color: theme.colors.text } }}
-                />
-              </Grid>
-            </Grid>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="Name"
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                required
+                fullWidth
+                sx={{
+                  background: theme.colors.paper,
+                  color: theme.colors.text,
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': { borderColor: theme.colors.divider },
+                    '&:hover fieldset': { borderColor: theme.colors.primary }
+                  },
+                  '& .MuiInputBase-input': { color: theme.colors.text }
+                }}
+              />
+              <TextField
+                label="Quantity"
+                type="number"
+                value={form.quantity}
+                onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
+                required
+                fullWidth
+                sx={{
+                  background: theme.colors.paper,
+                  color: theme.colors.text,
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': { borderColor: theme.colors.divider },
+                    '&:hover fieldset': { borderColor: theme.colors.primary }
+                  },
+                  '& .MuiInputBase-input': { color: theme.colors.text }
+                }}
+              />
+              <FormControl fullWidth required sx={{
+                background: theme.colors.paper,
+                color: theme.colors.text,
+                '& .MuiInputLabel-root': { color: theme.colors.textSecondary },
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: theme.colors.divider },
+                  '&:hover fieldset': { borderColor: theme.colors.primary }
+                }
+              }}>
+                <InputLabel sx={{ color: theme.colors.textSecondary }}>Unit</InputLabel>
+                <Select
+                  value={form.unit}
+                  label="Unit"
+                  onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
+                  sx={{
+                    background: theme.colors.paper,
+                    color: theme.colors.text,
+                    '& .MuiMenu-paper': { background: theme.colors.paper, color: theme.colors.text }
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        background: theme.colors.paper,
+                        color: theme.colors.text
+                      }
+                    }
+                  }}
+                >
+                  {units.map(unit => (
+                    <MenuItem key={unit} value={unit} sx={{ color: theme.colors.text }}>{unit}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth required sx={{
+                background: theme.colors.paper,
+                color: theme.colors.text,
+                '& .MuiInputLabel-root': { color: theme.colors.textSecondary },
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: theme.colors.divider },
+                  '&:hover fieldset': { borderColor: theme.colors.primary }
+                }
+              }}>
+                <InputLabel sx={{ color: theme.colors.textSecondary }}>Location</InputLabel>
+                <Select
+                  value={form.location}
+                  label="Location"
+                  onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+                  sx={{
+                    background: theme.colors.paper,
+                    color: theme.colors.text,
+                    '& .MuiMenu-paper': { background: theme.colors.paper, color: theme.colors.text }
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        background: theme.colors.paper,
+                        color: theme.colors.text
+                      }
+                    }
+                  }}
+                >
+                  {locations.map(loc => (
+                    <MenuItem key={loc} value={loc} sx={{ color: theme.colors.text }}>{loc}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth required sx={{
+                background: theme.colors.paper,
+                color: theme.colors.text,
+                '& .MuiInputLabel-root': { color: theme.colors.textSecondary },
+                '& .MuiOutlinedInput-root': {
+                  '& fieldset': { borderColor: theme.colors.divider },
+                  '&:hover fieldset': { borderColor: theme.colors.primary }
+                }
+              }}>
+                <InputLabel sx={{ color: theme.colors.textSecondary }}>Category</InputLabel>
+                <Select
+                  value={form.category}
+                  label="Category"
+                  onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                  sx={{
+                    background: theme.colors.paper,
+                    color: theme.colors.text,
+                    '& .MuiMenu-paper': { background: theme.colors.paper, color: theme.colors.text }
+                  }}
+                  MenuProps={{
+                    PaperProps: {
+                      sx: {
+                        background: theme.colors.paper,
+                        color: theme.colors.text
+                      }
+                    }
+                  }}
+                >
+                  {categories.map(cat => (
+                    <MenuItem key={cat} value={cat} sx={{ color: theme.colors.text }}>{cat}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <TextField
+                label="Expiry Date"
+                type="date"
+                value={form.expiryDate || ''}
+                onChange={e => setForm(f => ({ ...f, expiryDate: e.target.value }))}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+                sx={{
+                  background: theme.colors.paper,
+                  color: theme.colors.text,
+                  '& .MuiOutlinedInput-root': {
+                    '& fieldset': { borderColor: theme.colors.divider },
+                    '&:hover fieldset': { borderColor: theme.colors.primary }
+                  },
+                  '& .MuiInputBase-input': { color: theme.colors.text }
+                }}
+              />
+            </Box>
           </DialogContent>
           <DialogActions>
             <Button onClick={() => setDialogOpen(false)} sx={{ color: theme.colors.text }}>Cancel</Button>
