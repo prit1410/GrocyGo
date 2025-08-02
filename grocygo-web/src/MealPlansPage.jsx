@@ -4,6 +4,7 @@ import AddMealDialog from './AddMealDialog';
 import IngredientUsageDialog from './IngredientUsageDialog';
 import { auth } from './firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { useTheme } from './ThemeContext'; // <-- Add this line
 
 // Real API for AI meal plan suggestions
 async function getMealSuggestions(inventory = [], diet = '') {
@@ -267,6 +268,14 @@ export default function MealPlansPage() {
     setIngredientDialog({ open: false, plan: null, ingredients: [] });
   };
 
+  const theme = useTheme();
+
+  // Add this function to handle AI suggestion click
+  const handleAISuggestionClick = (suggestion) => {
+    setSelectedAISuggestion(suggestion);
+    setAIDialogOpen(true);
+  };
+
   if (!user) {
     let email, password;
     return (
@@ -293,15 +302,25 @@ export default function MealPlansPage() {
     });
   }
 
+  // --- Responsive layout strategy ---
+  // 1. Use a single flex row container for both boxes.
+  // 2. On desktop: Weekly Meal Plan (left), AI Meal Suggestions (right).
+  // 3. On mobile: Stack vertically, both boxes always visible.
+  // 4. No conditional rendering/hiding for either box.
+  // 5. Each box uses full width on mobile, fixed width for AI box on desktop.
+
   return (
-    <div className="mealplans-page-root">
+    <div className="mealplans-page-root" style={{
+      background: theme.colors.background,
+      minHeight: '100vh',
+    }}>
       <style>{`
         .mealplans-page-root {
-          background: #fff;
-          min-height: 100vh;
+          background: none !important;
         }
         .mealplans-layout {
           display: flex;
+          flex-direction: row;
           gap: 32px;
           padding: 32px;
           max-width: 1400px;
@@ -314,48 +333,58 @@ export default function MealPlansPage() {
             padding: 16px;
             gap: 16px;
           }
-          .mealplans-layout > div {
+          .mealplans-layout > .mealplans-main,
+          .mealplans-layout > .mealplans-responsive-ai {
             width: 100% !important;
             max-width: 100% !important;
+            min-width: 0 !important;
+            display: block !important;
+          }
+        }
+        @media (max-width: 600px) {
+          .mealplans-layout {
+            flex-direction: column !important;
+            gap: 16px !important;
+          }
+          .mealplans-layout > .mealplans-main,
+          .mealplans-layout > .mealplans-responsive-ai {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            display: block !important;
           }
         }
       `}</style>
-      <div className="mealplans-responsive-root" style={{
-        display: 'flex',
-        flexDirection: 'row',
-        gap: 32,
-        alignItems: 'flex-start',
-        background: '#fff',
-        minHeight: '100vh',
-        padding: 32,
-        boxSizing: 'border-box',
-        width: '100%',
-        maxWidth: 1400,
-        margin: '0 auto',
-        position: 'relative',
-      }}>
-        <div style={{
-          flex: '1 1 auto',
-          minWidth: 0,
-          maxWidth: '100%',
-          overflowX: 'hidden',
-        }}>
-          <h1>Meal Planning</h1>
-          <div style={{ color: '#666', marginBottom: 24 }}>Plan your meals based on available ingredients</div>
+      <div className="mealplans-layout">
+        {/* Weekly Meal Plan box (left/main) */}
+        <div className="mealplans-main"
+          style={{
+            flex: '1 1 0',
+            minWidth: 0,
+            maxWidth: '100%',
+            overflowX: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <h1 style={{ color: theme.colors.text }}>Meal Planning</h1>
+          <div style={{ color: theme.colors.textSecondary, marginBottom: 24 }}>Plan your meals based on available ingredients</div>
           <div style={{
-            background: '#fff', 
-            borderRadius: 12, 
-            padding: 24, 
-            boxShadow: '0 2px 8px #0001', 
-            marginBottom: 24,
-            border: '1px solid #eee'
+            background: theme.colors.paper,
+            borderRadius: 12,
+            padding: 24,
+            boxShadow: '0 2px 8px #0001',
+            border: `1px solid ${theme.colors.divider}`,
+            marginBottom: 0, // Remove marginBottom so AI box stays beside
+            width: '100%',
+            boxSizing: 'border-box'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
-              <h2 style={{ margin: 0, flex: 1 }}>Weekly Meal Plan</h2>
+              <h2 style={{ margin: 0, flex: 1, color: theme.colors.text }}>Weekly Meal Plan</h2>
               <button
                 style={{
-                  background: '#19c37d',
-                  color: '#fff',
+                  background: theme.colors.primary,
+                  color: theme.colors.paper,
                   border: 'none',
                   borderRadius: 6,
                   padding: '6px 16px',
@@ -369,12 +398,12 @@ export default function MealPlansPage() {
               </button>
             </div>
             {loading ? (
-              <div style={{ color: '#888', textAlign: 'center', margin: '48px 0', fontSize: 18 }}>Loading...</div>
+              <div style={{ color: theme.colors.textSecondary, textAlign: 'center', margin: '48px 0', fontSize: 18 }}>Loading...</div>
             ) : (
               <>
             {daysOfWeek.map(day => (
               <div key={day} style={{ marginBottom: 16 }}>
-                <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8 }}>{day}</div>
+                <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8, color: theme.colors.text }}>{day}</div>
                 <div style={{ display: 'flex', gap: 16 }}>
                   {mealSlots.map(slot => {
                     const plan = plans[day]?.[slot];
@@ -383,25 +412,26 @@ export default function MealPlansPage() {
                     return (
                       <div key={slot} style={{
                         flex: 1,
-                        border: '1px solid #eee',
+                        border: `1px solid ${theme.colors.divider}`,
                         borderRadius: 8,
                         padding: 16,
                         minHeight: 80,
-                        background: plan ? '#f8fff8' : '#fafbfc',
+                        background: plan ? theme.colors.cardBg : theme.colors.hover,
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'flex-start',
                         justifyContent: 'center',
-                        position: 'relative'
+                        position: 'relative',
+                        color: theme.colors.text
                       }}>
-                        <div style={{ fontWeight: 500, color: '#888', marginBottom: 4 }}>{slot}</div>
+                        <div style={{ fontWeight: 500, color: theme.colors.textSecondary, marginBottom: 4 }}>{slot}</div>
                         {plan ? (
                           <>
-                            <div style={{ fontWeight: 600 }}>{plan.name}</div>
-                            <div style={{ fontSize: 12, color: '#888' }}>{plan.time || (slot === 'Breakfast' ? '8:00 AM' : slot === 'Lunch' ? '12:30 PM' : '7:00 PM')}</div>
+                            <div style={{ fontWeight: 600, color: theme.colors.text }}>{plan.name}</div>
+                            <div style={{ fontSize: 12, color: theme.colors.textSecondary }}>{plan.time || (slot === 'Breakfast' ? '8:00 AM' : slot === 'Lunch' ? '12:30 PM' : '7:00 PM')}</div>
                             <button
                               style={{
-                                position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#d44', cursor: deletingPlanId === plan.id ? 'not-allowed' : 'pointer'
+                                position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: theme.colors.error, cursor: deletingPlanId === plan.id ? 'not-allowed' : 'pointer'
                               }}
                               onClick={() => handleDeleteMeal(plan.id)}
                               disabled={deletingPlanId === plan.id}
@@ -418,8 +448,8 @@ export default function MealPlansPage() {
                               <button
                                 style={{
                                   marginTop: 8,
-                                  background: '#19c37d',
-                                  color: '#fff',
+                                  background: theme.colors.primary,
+                                  color: theme.colors.paper,
                                   border: 'none',
                                   borderRadius: 6,
                                   padding: '4px 12px',
@@ -430,18 +460,18 @@ export default function MealPlansPage() {
                               >Completed?</button>
                             )}
                             {isCompleted && (
-                              <div style={{ marginTop: 8, color: '#19c37d', fontWeight: 500 }}>✔ Marked as made & inventory updated</div>
+                              <div style={{ marginTop: 8, color: theme.colors.primary, fontWeight: 500 }}>✔ Marked as made & inventory updated</div>
                             )}
                           </>
                         ) : (
                           <>
                             <button
                               style={{
-                                background: '#f4f4f4',
-                                border: '1px dashed #bbb',
+                                background: theme.colors.hover,
+                                border: `1px dashed ${theme.colors.divider}`,
                                 borderRadius: 6,
                                 padding: '6px 12px',
-                                color: '#888',
+                                color: theme.colors.textSecondary,
                                 cursor: 'pointer'
                               }}
                               onClick={() => handleAddMeal(day, slot)}
@@ -479,15 +509,22 @@ export default function MealPlansPage() {
               position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
               background: '#0008', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, maxWidth: 400 }}>
+              <div style={{
+                background: theme.colors.paper,
+                borderRadius: 12,
+                padding: 32,
+                minWidth: 320,
+                maxWidth: 400,
+                color: theme.colors.text
+              }}>
                 <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 16 }}>Did you make this meal?</div>
                 <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
                   <button
-                    style={{ background: '#19c37d', color: '#fff', border: 'none', borderRadius: 6, padding: '8px 24px', fontSize: 16, cursor: 'pointer' }}
+                    style={{ background: theme.colors.primary, color: theme.colors.paper, border: 'none', borderRadius: 6, padding: '8px 24px', fontSize: 16, cursor: 'pointer' }}
                     onClick={() => handleMadeMeal(completeDialog.plan)}
                   >Yes</button>
                   <button
-                    style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 6, padding: '8px 24px', fontSize: 16, cursor: 'pointer' }}
+                    style={{ background: theme.colors.hover, color: theme.colors.text, border: 'none', borderRadius: 6, padding: '8px 24px', fontSize: 16, cursor: 'pointer' }}
                     onClick={handleNotMadeMeal}
                   >No</button>
                 </div>
@@ -509,25 +546,29 @@ export default function MealPlansPage() {
               )}
             </div>
           </div>
-        </div>
-        <div className="mealplans-responsive-ai" style={{
-          flex: '0 0 380px',
-          background: '#fff',
-          borderRadius: 12,
-          padding: 24,
-          boxShadow: '0 2px 8px #0001',
-          width: '380px',
-          margin: 0,
-          overflow: 'hidden',
-          position: 'sticky',
-          top: 32,
-          alignSelf: 'flex-start',
-          boxSizing: 'border-box',
-          height: 'max-content',
-          maxHeight: 'calc(100vh - 64px)',
-          overflowY: 'auto',
-          border: '1px solid #eee'
-        }}>
+        {/* AI Meal Suggestions box (right/sidebar) */}
+        <div
+          className="mealplans-responsive-ai"
+          style={{
+            flex: '0 0 380px',
+            background: theme.colors.paper,
+            borderRadius: 12,
+            padding: 24,
+            boxShadow: '0 2px 8px #0001',
+            width: '380px',
+            margin: 0,
+            overflow: 'hidden',
+            position: 'sticky',
+            top: 32,
+            alignSelf: 'flex-start',
+            boxSizing: 'border-box',
+            height: 'max-content',
+            maxHeight: 'calc(100vh - 64px)',
+            overflowY: 'auto',
+            border: `1px solid ${theme.colors.divider}`,
+            color: theme.colors.text
+          }}
+        >
           <div
             style={{
               display: 'flex',
@@ -537,16 +578,16 @@ export default function MealPlansPage() {
               flexWrap: 'wrap',
             }}
           >
-            <h2 style={{ margin: 0, flex: 1, fontSize: 22 }}>AI Meal Suggestions</h2>
+            <h2 style={{ margin: 0, flex: 1, fontSize: 22, color: theme.colors.text }}>AI Meal Suggestions</h2>
             <select
               value={selectedDiet}
               onChange={e => setSelectedDiet(e.target.value)}
               style={{
                 padding: '6px 8px',
                 borderRadius: 6,
-                border: '1px solid #bbb',
-                color: '#333',
-                background: '#f8fcf7',
+                border: `1px solid ${theme.colors.divider}`,
+                color: theme.colors.text,
+                background: theme.colors.hover,
                 minWidth: 120,
                 fontSize: 15,
               }}
@@ -566,8 +607,8 @@ export default function MealPlansPage() {
             </select>
             <button
               style={{
-                background: '#19c37d',
-                color: '#fff',
+                background: theme.colors.primary,
+                color: theme.colors.paper,
                 border: 'none',
                 borderRadius: 6,
                 padding: '6px 16px',
@@ -594,7 +635,7 @@ export default function MealPlansPage() {
               <div
                 key={slot}
                 style={{
-                  border: '1px solid #eee',
+                  border: `1px solid ${theme.colors.divider}`,
                   borderRadius: 8,
                   padding: 16,
                   marginBottom: 16,
@@ -602,12 +643,13 @@ export default function MealPlansPage() {
                   alignItems: 'center',
                   gap: 16,
                   cursor: s ? 'pointer' : 'not-allowed',
-                  background: '#f8f8f8',
+                  background: theme.colors.hover,
                   opacity: s ? 1 : 0.5,
                   minHeight: 72,
                   width: '100%',
                   boxSizing: 'border-box',
                   flexWrap: 'wrap',
+                  color: theme.colors.text
                 }}
                 onClick={() => s && handleAISuggestionClick(s)}
               >
@@ -634,15 +676,15 @@ export default function MealPlansPage() {
                     minWidth: 0,
                   }}
                 >
-                  <div style={{ fontWeight: 600, color: '#333', fontSize: 17, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <div style={{ fontWeight: 600, color: theme.colors.text, fontSize: 17, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {s ? s.recipe_title : 'No suggestion'}
                   </div>
-                  <div style={{ fontSize: 13, color: '#888', fontWeight: 500, marginBottom: 2, minHeight: 16 }}>
+                  <div style={{ fontSize: 13, color: theme.colors.textSecondary, fontWeight: 500, marginBottom: 2, minHeight: 16 }}>
                     {s && s.course ? s.course : ''}
                   </div>
                   {/* Ingredient availability */}
                   {s && (
-                    <div style={{ fontSize: 13, color: '#19c37d', fontWeight: 600 }}>
+                    <div style={{ fontSize: 13, color: theme.colors.primary, fontWeight: 600 }}>
                       {typeof s.ingredients_available === 'number' && typeof s.ingredients_total === 'number'
                         ? `${s.ingredients_available} / ${s.ingredients_total} ingredients`
                         : ''}
@@ -660,7 +702,7 @@ export default function MealPlansPage() {
           }}>
             <div
               style={{
-                background: '#fff',
+                background: theme.colors.paper,
                 borderRadius: 12,
                 padding: 0,
                 minWidth: 340,
@@ -670,6 +712,7 @@ export default function MealPlansPage() {
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
+                color: theme.colors.text
               }}
               tabIndex={0}
               onClick={e => e.stopPropagation()}
@@ -683,7 +726,7 @@ export default function MealPlansPage() {
                 boxSizing: 'border-box',
               }}>
                 <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 12 }}>{selectedAISuggestion.recipe_title}</div>
-                <div style={{ color: '#666', fontSize: 15, marginBottom: 8 }}>
+                <div style={{ color: theme.colors.textSecondary, fontSize: 15, marginBottom: 8 }}>
                   {selectedAISuggestion.course}
                   {selectedAISuggestion.diet ? <span> &middot; {selectedAISuggestion.diet}</span> : null}
                   {selectedAISuggestion.prep_time ? <span> &middot; {selectedAISuggestion.prep_time}</span> : null}
@@ -693,13 +736,13 @@ export default function MealPlansPage() {
                     <img
                       src={selectedAISuggestion.recipe_image}
                       alt={selectedAISuggestion.recipe_title}
-                      style={{ width: '100%', maxHeight: 400, objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+                      style={{ width: '100%', maxHeight: 400, objectFit: 'cover', borderRadius: 8, border: `1px solid ${theme.colors.divider}` }}
                       onError={e => { e.target.style.display = 'none'; }}
                     />
                   </div>
                 )}
                 {selectedAISuggestion.description && (
-                  <div style={{ color: '#888', fontSize: 14, marginBottom: 12 }}>{selectedAISuggestion.description}</div>
+                  <div style={{ color: theme.colors.textSecondary, fontSize: 14, marginBottom: 12 }}>{selectedAISuggestion.description}</div>
                 )}
                 <div style={{ fontWeight: 600, marginBottom: 8 }}>Ingredients:</div>
                 {selectedAISuggestion.ingredients ? (
@@ -710,18 +753,18 @@ export default function MealPlansPage() {
                       return (
                         <li key={idx} style={{
                           marginBottom: 4,
-                          color: isAvailable ? '#19c37d' : isMissing ? '#d9534f' : '#333',
+                          color: isAvailable ? theme.colors.primary : isMissing ? theme.colors.error : theme.colors.text,
                           fontWeight: isAvailable ? 600 : isMissing ? 600 : 400
                         }}>
                           {ing}
-                          {isAvailable && <span style={{ marginLeft: 8, fontSize: 12, color: '#19c37d' }}>(In Inventory)</span>}
-                          {isMissing && <span style={{ marginLeft: 8, fontSize: 12, color: '#d9534f' }}>(Missing)</span>}
+                          {isAvailable && <span style={{ marginLeft: 8, fontSize: 12, color: theme.colors.primary }}>(In Inventory)</span>}
+                          {isMissing && <span style={{ marginLeft: 8, fontSize: 12, color: theme.colors.error }}>(Missing)</span>}
                         </li>
                       );
                     })}
                   </ul>
                 ) : (
-                  <div style={{ color: '#888', fontSize: 14, marginBottom: 8 }}>No ingredients found for this recipe.</div>
+                  <div style={{ color: theme.colors.textSecondary, fontSize: 14, marginBottom: 8 }}>No ingredients found for this recipe.</div>
                 )}
                 {selectedAISuggestion.instructions && (
                   <div style={{ marginTop: 12 }}>
@@ -730,28 +773,29 @@ export default function MealPlansPage() {
                       {selectedAISuggestion.instructions.split('|').map((step, idx) => (
                         <li key={idx} style={{ marginBottom: 4 }}>{step.trim()}</li>
                       ))}
-                    </ol>
+                      </ol>
                   </div>
                 )}
-                <div style={{ marginTop: 10, fontSize: 14, color: '#333' }}>
+                <div style={{ marginTop: 10, fontSize: 14, color: theme.colors.text }}>
                   <b>Ingredients available:</b> {selectedAISuggestion.ingredients_available} / {selectedAISuggestion.ingredients_total}
                 </div>
                 {selectedAISuggestion.url && (
                   <div style={{ marginTop: 10 }}>
-                    <a href={selectedAISuggestion.url} target="_blank" rel="noopener noreferrer" style={{ color: '#2196f3', textDecoration: 'underline' }}>
+                    <a href={selectedAISuggestion.url} target="_blank" rel="noopener noreferrer" style={{ color: theme.colors.primary, textDecoration: 'underline' }}>
                       View Full Recipe
                     </a>
                   </div>
+                  
                 )}
               </div>
               <div style={{
                 padding: '16px 32px',
-                borderTop: '1px solid #eee',
-                background: '#fafbfc',
+                borderTop: `1px solid ${theme.colors.divider}`,
+                background: theme.colors.hover,
                 textAlign: 'right',
               }}>
                 <button
-                  style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 6, padding: '8px 24px', fontSize: 16, cursor: 'pointer' }}
+                  style={{ background: theme.colors.hover, color: theme.colors.text, border: 'none', borderRadius: 6, padding: '8px 24px', fontSize: 16, cursor: 'pointer' }}
                   onClick={() => { setAIDialogOpen(false); setSelectedAISuggestion(null); }}
                 >Close</button>
               </div>
@@ -759,8 +803,9 @@ export default function MealPlansPage() {
           </div>
         )}
           {!Array.isArray(suggestions) && suggestions && suggestions.error && (
-            <div style={{ color: 'red' }}>{suggestions.error}</div>
+            <div style={{ color: theme.colors.error }}>{suggestions.error}</div>
           )}
+          </div>
         </div>
         </div>
         );
