@@ -321,12 +321,18 @@ function RecipesPage({ forceOpenDialog }) {
                   {/* Right: Details */}
                   <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minWidth: 0, overflow: 'hidden', color: theme.colors.text }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{recipe.name}</Typography>
+                      {/* Show recipe name as clickable link if url exists */}
+                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {recipe.url ? (
+                          <a href={recipe.url} target="_blank" rel="noopener noreferrer" style={{ color: theme.colors.primary, textDecoration: 'underline' }}>
+                            {recipe.name}
+                          </a>
+                        ) : recipe.name}
+                      </Typography>
                       <IconButton onClick={() => handleDelete(recipe.id)} size="small">
-                            <DeleteIcon sx={{ color: theme.colors.text }} />
+                        <DeleteIcon sx={{ color: theme.colors.text }} />
                       </IconButton>
                     </Box>
-                    <Typography color="text.secondary">{recipe.description}</Typography>
                     <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       {recipe.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {recipe.course}</Typography>}
                       {recipe.diet && <Typography variant="caption" color="secondary" sx={{ fontWeight: 600, bgcolor: '#fce4ec', px: 1, borderRadius: 1 }}>Diet: {recipe.diet}</Typography>}
