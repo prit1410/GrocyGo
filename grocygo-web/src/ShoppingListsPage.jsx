@@ -7,6 +7,7 @@ import {
   TextField, Button, Select, MenuItem, FormControl, InputLabel, Box
 } from '@mui/material';
 import ShoppingSuggestionInput from './ShoppingSuggestionInput';
+import { useTheme } from './ThemeContext';
 
 // Fetch smart shopping suggestions from backend (returns [{item, needed_for: [...]}, ...])
 // Uses GET /api/shopping/suggestions, which uses the user's inventory and recipes
@@ -47,6 +48,7 @@ export default function ShoppingListsPage() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const [suggestionsError, setSuggestionsError] = useState(null);
   const [suggestionPrompt, setSuggestionPrompt] = useState("");
+  const theme = useTheme();
 
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);
@@ -213,11 +215,13 @@ export default function ShoppingListsPage() {
   const completed = 0;
   const estimatedTotal = lists.reduce((sum, item) => sum + (item.price || 0), 0);
   return (
-    <div className="shopping-page-root">
+    <div className="shopping-page-root" style={{
+      background: theme.colors.background,
+      minHeight: '100vh'
+    }}>
       <style>{`
         .shopping-page-root {
-          background: #fff;
-          min-height: 100vh;
+          background: none !important;
         }
         .shopping-layout {
           display: flex;
@@ -236,16 +240,20 @@ export default function ShoppingListsPage() {
         }
       `}</style>
       <div className="shopping-layout">
-        <div style={{ flex: '1 1 auto', minWidth: 0, maxWidth: '100%' }}>
-          <h1 style={{ margin: '0 0 8px 0' }}>Shopping Lists</h1>
-          <div style={{ color: '#666', marginBottom: 24 }}>Smart shopping lists based on your inventory and meal plans</div>
+        <div style={{
+          flex: '1 1 auto',
+          minWidth: 0,
+          maxWidth: '100%'
+        }}>
+          <h1 style={{ margin: '0 0 8px 0', color: theme.colors.text }}>Shopping Lists</h1>
+          <div style={{ color: theme.colors.textSecondary, marginBottom: 24 }}>Smart shopping lists based on your inventory and meal plans</div>
           <Box sx={{
-            background: '#fff',
+            background: theme.colors.paper,
             borderRadius: 2,
             p: { xs: 2, sm: 3 },
             boxShadow: '0 2px 8px #0001',
             mb: 3,
-            border: '1px solid #eee'
+            border: `1px solid ${theme.colors.divider}`
           }}>
             <Box sx={{
               display: 'flex',
@@ -254,25 +262,27 @@ export default function ShoppingListsPage() {
               gap: 2,
               mb: 2
             }}>
-              <h2 style={{ margin: 0, flex: 1, minWidth: '200px' }}>Shopping List</h2>
+              <h2 style={{ margin: 0, flex: 1, minWidth: '200px', color: theme.colors.text }}>Shopping List</h2>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-                <span style={{ color: '#888', fontSize: 14 }}>{completed}/{lists.length} completed</span>
+                <span style={{ color: theme.colors.textSecondary, fontSize: 14 }}>{completed}/{lists.length} completed</span>
                 <Button
                   variant="outlined"
                   size="small"
                   onClick={() => setDialogOpen(true)}
+                  sx={{ color: theme.colors.text, borderColor: theme.colors.divider }}
                 >+ Add</Button>
                 <Button
                   variant="outlined"
                   size="small"
                   onClick={fetchLists}
                   disabled={loading}
+                  sx={{ color: theme.colors.text, borderColor: theme.colors.divider }}
                 >
                   {loading ? 'Refreshing...' : 'Refresh'}
                 </Button>
               </Box>
             </Box>
-            <div style={{ color: '#888', marginBottom: 8 }}>Estimated total: ${estimatedTotal.toFixed(2)}</div>
+            <div style={{ color: theme.colors.textSecondary, marginBottom: 8 }}>Estimated total: ${estimatedTotal.toFixed(2)}</div>
             <form onSubmit={e => { e.preventDefault(); setDialogOpen(true); }}>
               <TextField
                 fullWidth
@@ -282,18 +292,18 @@ export default function ShoppingListsPage() {
                 value=""
                 InputProps={{
                   endAdornment: (
-                    <Button variant="contained" onClick={() => setDialogOpen(true)} sx={{ minWidth: 40, p: 0 }}>+</Button>
+                    <Button variant="contained" onClick={() => setDialogOpen(true)} sx={{ minWidth: 40, p: 0, background: theme.colors.primary, color: theme.colors.paper }}>+</Button>
                   )
                 }}
                 inputProps={{ readOnly: true }}
               />
             </form>
             {loading ? (
-              <div style={{ color: '#888', textAlign: 'center', margin: '48px 0', fontSize: 18 }}>Loading...</div>
+              <div style={{ color: theme.colors.textSecondary, textAlign: 'center', margin: '48px 0', fontSize: 18 }}>Loading...</div>
             ) : (
               <>
                 {lists.length === 0 ? (
-                  <div style={{ color: '#aaa', textAlign: 'center', margin: '48px 0' }}>
+                  <div style={{ color: theme.colors.textSecondary, textAlign: 'center', margin: '48px 0' }}>
                     Your shopping list is empty.<br />Add items using the input above.
                   </div>
                 ) : (
@@ -315,18 +325,22 @@ export default function ShoppingListsPage() {
                         flexWrap: 'wrap',
                         alignItems: 'center',
                         gap: '8px',
-                        borderBottom: '1px solid #f0f0f0',
+                        borderBottom: `1px solid ${theme.colors.divider}`,
                         padding: '12px 0'
                       }}>
-                        <div style={{ flex: '1 1 250px', minWidth: 0 }}>
-                          <div style={{ 
+                        <div style={{
+                          flex: '1 1 250px',
+                          minWidth: 0
+                        }}>
+                          <div style={{
                             fontWeight: 500,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
+                            color: theme.colors.text
                           }}>{list.name}</div>
-                          <div style={{ 
-                            color: '#888',
+                          <div style={{
+                            color: theme.colors.textSecondary,
                             fontSize: '0.9em',
                             marginTop: '4px'
                           }}>
@@ -338,6 +352,7 @@ export default function ShoppingListsPage() {
                           color="error"
                           size="small"
                           onClick={() => handleDelete(list.id)}
+                          sx={{ color: theme.colors.error }}
                         >Delete</Button>
                       </li>
                     ))}
@@ -349,7 +364,7 @@ export default function ShoppingListsPage() {
         </div>
         <div style={{
           flex: '0 0 380px',
-          background: '#fff',
+          background: theme.colors.paper,
           borderRadius: 12,
           padding: 24,
           boxShadow: '0 2px 8px #0001',
@@ -358,48 +373,59 @@ export default function ShoppingListsPage() {
           alignSelf: 'flex-start',
           position: 'sticky',
           top: 32,
-          border: '1px solid #eee',
+          border: `1px solid ${theme.colors.divider}`,
           boxSizing: 'border-box',
           height: 'max-content',
           maxHeight: 'calc(100vh - 64px)',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          color: theme.colors.text
         }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 16 }}>
-            <h2 style={{ margin: 0, flex: 1, fontSize: '1.5rem' }}>Smart Suggestions</h2>
+            <h2 style={{ margin: 0, flex: 1, fontSize: '1.5rem', color: theme.colors.text }}>Smart Suggestions</h2>
           </div>
           <Button
             variant="contained"
-            sx={{ background: '#19c37d', width: '100%', mb: 2 }}
+            sx={{ background: theme.colors.primary, color: theme.colors.paper, width: '100%', mb: 2, '&:hover': { background: theme.colors.primary } }}
             onClick={fetchSuggestions}
             disabled={suggestionsLoading}
           >{suggestionsLoading ? 'Generating...' : 'Auto Generate'}</Button>
           {suggestionsError && (
-            <div style={{ color: 'red', textAlign: 'center', margin: '16px 0' }}>{suggestionsError}</div>
+            <div style={{ color: theme.colors.error, textAlign: 'center', margin: '16px 0' }}>{suggestionsError}</div>
           )}
           {(!suggestionsLoading && suggestions.length === 0 && !suggestionsError) && (
-            <div style={{ color: '#aaa', textAlign: 'center', margin: '32px 0' }}>
+            <div style={{ color: theme.colors.textSecondary, textAlign: 'center', margin: '32px 0' }}>
               No smart suggestions available.<br />
-              <span style={{ color: '#888', fontSize: 13 }}>
+              <span style={{ color: theme.colors.textSecondary, fontSize: 13 }}>
                 This may happen if your inventory and meal plans are empty, or the AI could not generate suggestions for your data.<br />
                 Try adding items to your inventory or meal plans, or adjust your prompt above.<br />
               </span>
-              <Button variant="outlined" sx={{ mt: 2, mr: 2 }} onClick={() => fetchSuggestions(suggestionPrompt)}>
+              <Button variant="outlined" sx={{ mt: 2, mr: 2, color: theme.colors.text, borderColor: theme.colors.divider }} onClick={() => fetchSuggestions(suggestionPrompt)}>
                 Regenerate Suggestions
               </Button>
               {rawSuggestions !== null && (
-                <Button variant="text" sx={{ mt: 2 }} onClick={() => setShowRaw(v => !v)}>
+                <Button variant="text" sx={{ mt: 2, color: theme.colors.primary }} onClick={() => setShowRaw(v => !v)}>
                   {showRaw ? 'Hide' : 'Show'} Debug Info
                 </Button>
               )}
               {showRaw && rawSuggestions !== null && (
-                <pre style={{ textAlign: 'left', marginTop: 12, background: '#f6f6f6', padding: 8, borderRadius: 4, fontSize: 12, maxHeight: 200, overflow: 'auto' }}>
+                <pre style={{
+                  textAlign: 'left',
+                  marginTop: 12,
+                  background: theme.colors.hover,
+                  padding: 8,
+                  borderRadius: 4,
+                  fontSize: 12,
+                  maxHeight: 200,
+                  overflow: 'auto',
+                  color: theme.colors.text
+                }}>
                   {JSON.stringify(rawSuggestions, null, 2)}
                 </pre>
               )}
             </div>
           )}
           {suggestionsLoading && (
-            <div style={{ color: '#888', textAlign: 'center', margin: '32px 0' }}>Loading suggestions...</div>
+            <div style={{ color: theme.colors.textSecondary, textAlign: 'center', margin: '32px 0' }}>Loading suggestions...</div>
           )}
           {suggestions.length > 0 && !suggestionsLoading && (
             <>
@@ -415,31 +441,29 @@ export default function ShoppingListsPage() {
                 if (!displayName) return null;
                 return (
                   <div key={displayName + idx} style={{
-                    border: '1px solid #eee',
+                    border: `1px solid ${theme.colors.divider}`,
                     borderRadius: 8,
                     padding: '12px 16px',
                     marginBottom: 12,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 12,
-                    background: '#f8f8f8',
+                    background: theme.colors.hover,
                     transition: 'all 0.2s ease',
-                    cursor: 'pointer',
-                    ':hover': {
-                      background: '#f0f0f0'
-                    }
+                    cursor: 'pointer'
                   }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ 
+                      <div style={{
                         fontWeight: 600,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
+                        whiteSpace: 'nowrap',
+                        color: theme.colors.text
                       }}>{displayName}</div>
                       {neededForDisplay && (
-                        <div style={{ 
+                        <div style={{
                           fontSize: 12,
-                          color: '#666',
+                          color: theme.colors.textSecondary,
                           marginTop: 4,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
@@ -452,7 +476,7 @@ export default function ShoppingListsPage() {
                     <Button
                       variant="outlined"
                       size="small"
-                      sx={{ minWidth: 32, height: 32, p: 0 }}
+                      sx={{ minWidth: 32, height: 32, p: 0, color: theme.colors.primary, borderColor: theme.colors.primary }}
                       onClick={() => handleAddFromSuggestion(item)}
                     >+</Button>
                   </div>
@@ -462,12 +486,19 @@ export default function ShoppingListsPage() {
           )}
         </div>
       </div>
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth
+        PaperProps={{
+          style: {
+            background: theme.colors.paper,
+            color: theme.colors.text
+          }
+        }}
+      >
         <DialogTitle>Add Items</DialogTitle>
         <form onSubmit={handleAdd}>
           <DialogContent>
             {items.map((item, idx) => (
-              <Box key={idx} sx={{ mb: 2, border: '1px solid #eee', borderRadius: 2, p: 2, position: 'relative' }}>
+              <Box key={idx} sx={{ mb: 2, border: `1px solid ${theme.colors.divider}`, borderRadius: 2, p: 2, position: 'relative', background: theme.colors.hover }}>
                 <ShoppingSuggestionInput
                   label="Item Name"
                   value={item.name}
@@ -487,6 +518,9 @@ export default function ShoppingListsPage() {
                   onChange={e => setItems(arr => arr.map((it, i) => i === idx ? { ...it, quantity: e.target.value } : it))}
                   required
                   sx={{ mb: 1 }}
+                  InputProps={{
+                    style: { color: theme.colors.text }
+                  }}
                 />
                 <FormControl fullWidth required sx={{ mb: 1 }}>
                   <InputLabel>Unit</InputLabel>
@@ -516,7 +550,7 @@ export default function ShoppingListsPage() {
                   <Button
                     size="small"
                     color="error"
-                    sx={{ position: 'absolute', top: 8, right: 8 }}
+                    sx={{ position: 'absolute', top: 8, right: 8, color: theme.colors.error }}
                     onClick={() => setItems(arr => arr.filter((_, i) => i !== idx))}
                   >Remove</Button>
                 )}
@@ -525,7 +559,7 @@ export default function ShoppingListsPage() {
             <Button
               variant="outlined"
               onClick={() => setItems(arr => [...arr, { name: '', quantity: 1, unit: '', category: '' }])}
-              sx={{ mb: 2 }}
+              sx={{ mb: 2, color: theme.colors.text, borderColor: theme.colors.divider }}
               fullWidth
             >+ Add Another Item</Button>
           </DialogContent>
@@ -533,8 +567,8 @@ export default function ShoppingListsPage() {
             <Button onClick={() => {
               setDialogOpen(false);
               setItems([{ name: '', quantity: 1, unit: '', category: '' }]);
-            }}>Cancel</Button>
-            <Button type="submit" variant="contained">Add All</Button>
+            }} sx={{ color: theme.colors.text }}>Cancel</Button>
+            <Button type="submit" variant="contained" sx={{ background: theme.colors.primary, color: theme.colors.paper }}>Add All</Button>
           </DialogActions>
         </form>
       </Dialog>

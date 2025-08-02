@@ -28,6 +28,9 @@ const units = ['pieces', 'kg', 'bag', 'packet', 'box', 'containers', 'lbs', 'loa
 const locations = ['Counter', 'Fridge', 'Freezer', 'Pantry'];
 const categories = ['fruits', 'vegetables', 'namkeen', 'meat & fish', 'dairy', 'pantry'];
 
+// Module-level cache for inventory
+let inventoryCache = null;
+
 export default function InventoryPage() {
   // --- State and hooks ---
   const [items, setItems] = useState([]);
@@ -36,38 +39,64 @@ export default function InventoryPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ name: '', quantity: 1, unit: '', location: '', expiryDate: null, category: '' });
   const [snackbar, setSnackbar] = useState(null);
+  const [refresh, setRefresh] = useState(0); // trigger for manual refresh
   const theme = useTheme();
   const navigate = useNavigate();
 
   // --- Fetch items from backend ---
   useEffect(() => {
+    let ignore = false;
     setLoading(true);
-    getInventory()
-      .then(res => {
-        if (Array.isArray(res.data)) {
-          setItems(res.data);
-        } else if (Array.isArray(res)) {
-          setItems(res);
-        } else {
-          setItems([]);
-        }
-      })
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
-  }, []);
+    if (inventoryCache && Array.isArray(inventoryCache)) {
+      setItems(inventoryCache);
+      setLoading(false);
+    } else {
+      getInventory()
+        .then(res => {
+          let arr = Array.isArray(res.data) ? res.data : (Array.isArray(res) ? res : []);
+          if (!ignore) {
+            setItems(arr);
+            inventoryCache = arr;
+          }
+        })
+        .catch(() => {
+          if (!ignore) setItems([]);
+        })
+        .finally(() => {
+          if (!ignore) setLoading(false);
+        });
+    }
+    return () => { ignore = true; };
+  }, [refresh]);
 
   // --- Handlers ---
   const handleAdd = (e) => {
     e.preventDefault();
-    setItems(prev => ([...prev, { ...form, id: Date.now() }]));
+    setItems(prev => {
+      const updated = [...prev, { ...form, id: Date.now() }];
+      inventoryCache = updated;
+      return updated;
+    });
     setDialogOpen(false);
     setForm({ name: '', quantity: 1, unit: '', location: '', expiryDate: null, category: '' });
     setSnackbar({ open: true, message: 'Item added!', severity: 'success' });
   };
-  const handleDelete = (id) => {
-    setItems(prev => prev.filter(item => item.id !== id));
-    setSnackbar({ open: true, message: 'Item deleted!', severity: 'info' });
+
+  // Update handleDelete to call backend API
+  const handleDelete = async (id) => {
+    try {
+      await deleteInventory(id); // <-- Call backend to delete from Firebase
+      setItems(prev => {
+        const updated = prev.filter(item => item.id !== id);
+        inventoryCache = updated;
+        return updated;
+      });
+      setSnackbar({ open: true, message: 'Item deleted!', severity: 'info' });
+    } catch (e) {
+      setSnackbar({ open: true, message: 'Failed to delete item!', severity: 'error' });
+    }
   };
+
   const getExpiryStatus = (date) => {
     if (!date) return null;
     const expiryDate = new Date(date);
@@ -105,7 +134,19 @@ export default function InventoryPage() {
             <Box sx={{ display: 'flex', flexWrap: { xs: 'wrap', sm: 'nowrap' }, gap: 1, justifyContent: { xs: 'flex-start', sm: 'flex-end' }, alignItems: 'center' }}>
               <Button onClick={() => navigate('/recipes')} variant="outlined" size="small" sx={{ color: theme.colors.text, borderColor: theme.colors.divider, '&:hover': { borderColor: theme.colors.primary, background: theme.colors.hover } }}>Suggested Recipes</Button>
               <Button startIcon={<AddIcon />} variant="contained" color="primary" size="small" onClick={() => setDialogOpen(true)} sx={{ background: theme.colors.primary, color: theme.colors.text, '&:hover': { background: theme.colors.hover } }}>Add Item</Button>
-              <Button variant="outlined" onClick={() => { setLoading(true); setTimeout(() => setLoading(false), 500); }} disabled={loading} size="small" sx={{ color: theme.colors.text, borderColor: theme.colors.divider, '&:hover': { borderColor: theme.colors.primary, background: theme.colors.hover } }}>{loading ? 'Refreshing...' : 'Refresh'}</Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  inventoryCache = null; // Clear cache to force API fetch
+                  setLoading(true);
+                  setRefresh(r => r + 1);
+                }}
+                disabled={loading}
+                size="small"
+                sx={{ color: theme.colors.text, borderColor: theme.colors.divider, '&:hover': { borderColor: theme.colors.primary, background: theme.colors.hover } }}
+              >
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </Button>
             </Box>
           </Grid>
         </Grid>

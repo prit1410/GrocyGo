@@ -22,26 +22,39 @@ export function ThemeProvider({ children }) {
     setIsDarkMode(prev => !prev);
   };
 
-  const theme = {
-    isDarkMode,
-    toggleTheme,
-    colors: {
-      background: isDarkMode ? '#0a192f' : '#ffffff',
-      paper: isDarkMode ? '#162447' : '#ffffff',
-      text: isDarkMode ? '#ffffff' : '#000000',
-      textSecondary: isDarkMode ? '#bfc9d1' : '#666666',
-      primary: isDarkMode ? '#4caf50' : '#2196f3',
-      secondary: isDarkMode ? '#ff9800' : '#f50057',
-      error: isDarkMode ? '#ff4444' : '#f44336',
-      success: isDarkMode ? '#4caf50' : '#4caf50',
-      divider: isDarkMode ? '#233554' : '#e0e0e0',
-      cardBg: isDarkMode ? '#232b3e' : '#ffffff',
-      hover: isDarkMode ? '#1f4068' : '#f5f5f5',
-      border: isDarkMode ? '#233554' : '#e0e0e0',
-      chartGrid: isDarkMode ? '#233554' : '#e0e0e0',
-      chartText: isDarkMode ? '#bfc9d1' : '#666666'
-    }
-  };
+const theme = {
+  isDarkMode,
+  toggleTheme,
+  colors: {
+    // Backgrounds
+    background: isDarkMode ? '#101418' : '#F6FCFA',         // Deep charcoal vs light mint-white
+    paper: isDarkMode ? '#1A1F24' : '#FFFFFF',              // Panel/card surfaces
+    cardBg: isDarkMode ? '#20262C' : '#FFFFFF',             // Cards
+
+    // Primary text
+    text: isDarkMode ? '#F0F3F8' : '#1C1F23',               // Soft white vs deep gray
+    textSecondary: isDarkMode ? '#A6B2C2' : '#4B5563',      // For subtext and labels
+
+    // Branding
+    primary: '#2F9E89',     // Leafy green-teal = healthy + calm
+    secondary: '#FF7A59',   // Coral orange = energetic and friendly
+    accent: '#C084FC',      // Purple tint = AI/smart touch (used sparingly)
+    
+    success: '#3CCF4E',
+    error: '#FF4C4C',
+
+    // UI Neutrals
+    divider: isDarkMode ? '#2C333A' : '#E3E8ED',
+    border: isDarkMode ? '#38424D' : '#D1D9E0',
+    hover: isDarkMode ? '#25303B' : '#F2F6F9',
+
+    // Charts & Interactive
+    chartGrid: isDarkMode ? '#313A45' : '#DCE3EA',
+    chartText: isDarkMode ? '#C7D0DC' : '#5A6372',
+  }
+};
+
+
 
   return (
     <ThemeContext.Provider value={theme}>

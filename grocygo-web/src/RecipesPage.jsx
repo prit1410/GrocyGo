@@ -5,18 +5,15 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } fro
 import { useEffect, useState, useRef } from 'react';
 import { Player } from '@lottiefiles/react-lottie-player';
 
-import { auth } from './firebase';
+import { auth } from './firebase';import { useTheme } from './ThemeContext';
 import { Card, CardContent, CardMedia, Typography, Grid, Box, Button, Link, TextField, IconButton } from '@mui/material';
-
-
-
-
 
 // Module-level cache for recipes and inventory
 let recipesCache = null;
 let inventoryCache = null;
 
 function RecipesPage({ forceOpenDialog }) {
+  const theme = useTheme();
   const [recipes, setRecipes] = useState([]);
   const [user, setUser] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -141,12 +138,16 @@ function RecipesPage({ forceOpenDialog }) {
 
   const handleSaveToMyRecipes = async (recipe) => {
     try {
-      // Prepare the recipe object for your backend
+      // Save all details including image, instructions, prep_time, etc.
       const payload = {
         name: recipe.recipe_title,
-        description: recipe.url,
+        description: recipe.description || '',
+        url: recipe.url || '',
+        recipe_image: recipe.recipe_image || '',
+        prep_time: recipe.prep_time || '',
         course: recipe.course || '',
         diet: recipe.diet || '',
+        instructions: recipe.instructions || '',
         items: recipe.ingredients
           ? recipe.ingredients.split('|').map(ing => ({
               name: ing.trim(),
@@ -209,7 +210,7 @@ function RecipesPage({ forceOpenDialog }) {
           </Box>
         </Grid>
       </Grid>
-      <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 3 }}>
+      <Typography variant="subtitle1" color="theme.color.text" sx={{ mb: 3 }}>
         Save and manage your favorite recipes
       </Typography>
       <Grid container spacing={2}>
@@ -271,7 +272,7 @@ function RecipesPage({ forceOpenDialog }) {
                     borderRadius: 3,
                     boxShadow: 2,
                     overflow: 'hidden',
-                    background: '#fff',
+                    background: theme.colors.paper,
                     height: '100%',
                   }}
                 >
@@ -310,7 +311,7 @@ function RecipesPage({ forceOpenDialog }) {
                         width: '100%',
                         aspectRatio: '1',
                         display: 'flex',
-                        alignItems: 'center',
+                            alignItems: 'center',
                         justifyContent: 'center',
                         color: '#bbb',
                         fontSize: 32,
@@ -318,11 +319,11 @@ function RecipesPage({ forceOpenDialog }) {
                     )}
                   </Box>
                   {/* Right: Details */}
-                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minWidth: 0, overflow: 'hidden' }}>
+                  <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minWidth: 0, overflow: 'hidden', color: theme.colors.text }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{recipe.name}</Typography>
                       <IconButton onClick={() => handleDelete(recipe.id)} size="small">
-                        <DeleteIcon />
+                            <DeleteIcon sx={{ color: theme.colors.text }} />
                       </IconButton>
                     </Box>
                     <Typography color="text.secondary">{recipe.description}</Typography>
@@ -333,18 +334,18 @@ function RecipesPage({ forceOpenDialog }) {
                     {Array.isArray(recipe.items) && recipe.items.length > 0 && (
                       <Box sx={{ mb: 1 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center'}}>
                           {recipe.items.map((item, idx) => (
-                            <Box key={idx} sx={{ fontSize: 13, bgcolor: '#f5f5f5', px: 1, borderRadius: 1, mr: 0.5 }}>
+                            <Box key={idx} sx={{ fontSize: 13, bgcolor: theme.colors.hover, px: 1, borderRadius: 1, mr: 0.5 }}>
                               {item.name}
                             </Box>
                           ))}
                         </Box>
                       </Box>
                     )}
-                    <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 2, color: theme.colors.text }}>
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', display: 'flex', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', display: 'flex', alignItems: 'center', color: theme.colors.text }}>
                           <span role="img" aria-label="check" style={{ marginRight: 4 }}>✔️</span>
                           You have ({matched.length}):
                         </Typography>
@@ -352,12 +353,12 @@ function RecipesPage({ forceOpenDialog }) {
                           {matched.length === 0 ? (
                             <Typography variant="body2" color="text.secondary">None</Typography>
                           ) : matched.map((ing, idx) => (
-                            <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
+                            <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap', color: theme.colors.text }}>{ing}</Box>
                           ))}
                         </Box>
                       </Box>
                       <Box>
-                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main', display: 'flex', alignItems: 'center' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main', display: 'flex', alignItems: 'center', color: theme.colors.text }}>
                           <span role="img" aria-label="cross" style={{ marginRight: 4 }}>❌</span>
                           Need to buy ({missing.length}):
                         </Typography>
@@ -365,7 +366,7 @@ function RecipesPage({ forceOpenDialog }) {
                           {missing.length === 0 ? (
                             <Typography variant="body2" color="text.secondary">None</Typography>
                           ) : missing.map((ing, idx) => (
-                            <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
+                            <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap', color: theme.colors.text }}>{ing}</Box>
                           ))}
                         </Box>
                       </Box>
@@ -403,7 +404,7 @@ function RecipesPage({ forceOpenDialog }) {
         inventoryItems={inventoryItems}
       />
       {/* AI Recipe Filters */}
-      <Box
+            <Box
         sx={{
           mt: 4,
           mb: 2,
@@ -502,14 +503,14 @@ function RecipesPage({ forceOpenDialog }) {
                         borderRadius: 3,
                         boxShadow: 2,
                         overflow: 'hidden',
-                        background: '#fff',
+                        background: theme.colors.paper,
                         height: '100%',
                       }}
                     >
                       {/* Left: Image */}
                       <Box
                         sx={{
-                          width: { xs: '100%', sm: 140, md: 180 },
+                          width: { xs: '100%', sm: 140, md: 395 },
                           minHeight: { xs: 140, sm: '100%' },
                           aspectRatio: '1',
                           background: '#f8f8f8',
@@ -541,7 +542,7 @@ function RecipesPage({ forceOpenDialog }) {
                             width: '100%',
                             aspectRatio: '1',
                             display: 'flex',
-                            alignItems: 'center',
+                                alignItems: 'center',
                             justifyContent: 'center',
                             color: '#bbb',
                             fontSize: 32,
@@ -549,13 +550,20 @@ function RecipesPage({ forceOpenDialog }) {
                         )}
                       </Box>
                       {/* Right: Details */}
-                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minWidth: 0, overflow: 'hidden' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.recipe_title}</Typography>
+                      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', p: 2, minWidth: 0, overflow: 'hidden', color: theme.colors.text }}>
+                        {/* Recipe title as clickable link if url exists */}
+                        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 18, minHeight: 32, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {r.url ? (
+                            <a href={r.url} target="_blank" rel="noopener noreferrer" style={{ color: theme.colors.primary, textDecoration: 'underline' }}>
+                              {r.recipe_title}
+                            </a>
+                          ) : r.recipe_title}
+                        </Typography>
                         <Box sx={{ mb: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                           {r.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {r.course}</Typography>}
                           {r.diet && <Typography variant="caption" color="secondary" sx={{ fontWeight: 600, bgcolor: '#fce4ec', px: 1, borderRadius: 1 }}>Diet: {r.diet}</Typography>}
                         </Box>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        <Typography variant="body2" color="theme.color.text" sx={{ mb: 1 }}>
                           <b>Prep time:</b> {r.prep_time}
                         </Typography>
                         {r.ingredients && (
@@ -563,14 +571,14 @@ function RecipesPage({ forceOpenDialog }) {
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                               {r.ingredients.split('|').map((ing, idx) => (
-                                <Box key={idx} sx={{ fontSize: 13, bgcolor: '#f5f5f5', px: 1, borderRadius: 1, mr: 0.5 }}>{ing.trim()}</Box>
+                              <Box key={idx} sx={{ fontSize: 13, bgcolor: theme.colors.hover, px: 1, borderRadius: 1, mr: 0.5 }}>{ing.trim()}</Box>
                               ))}
                             </Box>
                           </Box>
                         )}
-                        <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 2, color: theme.colors.text }}>
                           <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', display: 'flex', alignItems: 'center' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', display: 'flex', alignItems: 'center', color: theme.colors.text }}>
                               <span role="img" aria-label="check" style={{ marginRight: 4 }}>✔️</span>
                               You have ({matched.length}):
                             </Typography>
@@ -578,12 +586,12 @@ function RecipesPage({ forceOpenDialog }) {
                               {matched.length === 0 ? (
                                 <Typography variant="body2" color="text.secondary">None</Typography>
                               ) : matched.map((ing, idx) => (
-                                <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
+                                <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap',  color: theme.colors.text }}>{ing}</Box>
                               ))}
                             </Box>
                           </Box>
                           <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main', display: 'flex', alignItems: 'center' }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, color: 'error.main', display: 'flex', alignItems: 'center', color: theme.colors.text }}>
                               <span role="img" aria-label="cross" style={{ marginRight: 4 }}>❌</span>
                               Need to buy ({missing.length}):
                             </Typography>
@@ -591,7 +599,7 @@ function RecipesPage({ forceOpenDialog }) {
                               {missing.length === 0 ? (
                                 <Typography variant="body2" color="text.secondary">None</Typography>
                               ) : missing.map((ing, idx) => (
-                                <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap' }}>{ing}</Box>
+                                <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap',  color: theme.colors.text }}>{ing}</Box>
                               ))}
                             </Box>
                           </Box>
@@ -600,7 +608,7 @@ function RecipesPage({ forceOpenDialog }) {
                           <Button
                             variant="outlined"
                             color="primary"
-                            fullWidth
+                                fullWidth
                             sx={{ fontWeight: 600, fontSize: 15, borderRadius: 2 }}
                             onClick={() => handleSaveToMyRecipes(r)}
                           >
@@ -617,7 +625,7 @@ function RecipesPage({ forceOpenDialog }) {
         })()}
       </Box>
     </Box>
-  );
+    );
 }
 
 export default RecipesPage;
