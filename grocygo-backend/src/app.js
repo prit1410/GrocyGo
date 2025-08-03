@@ -1,8 +1,3 @@
-// Log every API request for debugging
-app.use((req, res, next) => {
-  console.log(`[API Request] ${req.method} ${req.originalUrl}`);
-  next();
-});
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -77,5 +72,11 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/shopping', shoppingRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/analytics', analyticsRoutes);
+
+// Now add logging middleware
+app.use((req, res, next) => {
+  console.log(`[API Request] ${req.method} ${req.originalUrl}`);
+  next();
+});
 
 module.exports = app;
