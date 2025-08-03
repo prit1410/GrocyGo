@@ -1,3 +1,8 @@
+// Log every API request for debugging
+app.use((req, res, next) => {
+  console.log(`[API Request] ${req.method} ${req.originalUrl}`);
+  next();
+});
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -19,7 +24,14 @@ app.get('/api/health', (req, res) => {
 });
 
 // API Key authentication for all other API routes
-app.use('/api', apiKeyMiddleware);
+app.use('/api', (req, res, next) => {
+  try {
+    apiKeyMiddleware(req, res, next);
+  } catch (err) {
+    console.error('[API Key Middleware Error]', err);
+    next(err);
+  }
+});
 const inventoryRoutes = require('./routes/inventory');
 const recipesRoutes = require('./routes/recipes');
 const mealPlansRoutes = require('./routes/mealPlans');
