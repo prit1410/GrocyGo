@@ -52,6 +52,11 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'GrocyGo backend is running!' });
 });
 
+app.get('/api/test-log', (req, res) => {
+  console.log('Test log endpoint hit');
+  res.json({ status: 'ok' });
+});
+
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/recipes', recipesRoutes);
 app.use('/api/meal-plans', mealPlansRoutes);
