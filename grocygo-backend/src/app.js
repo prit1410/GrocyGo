@@ -7,10 +7,7 @@ const app = express();
 
 // CORS middleware at the very top
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'https://grocy-go-web.vercel.app',
-    'http://localhost:3000',
-  ],
+  origin: true, // Allow all origins
   credentials: true
 }));
 
