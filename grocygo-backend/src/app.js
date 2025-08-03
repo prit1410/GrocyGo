@@ -64,6 +64,11 @@ app.get('/api/test-log', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+app.use((req, res, next) => {
+  console.log(`[API Request] ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/recipes', recipesRoutes);
 app.use('/api/meal-plans', mealPlansRoutes);
@@ -73,10 +78,6 @@ app.use('/api/shopping', shoppingRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// Now add logging middleware
-app.use((req, res, next) => {
-  console.log(`[API Request] ${req.method} ${req.originalUrl}`);
-  next();
-});
+
 
 module.exports = app;
