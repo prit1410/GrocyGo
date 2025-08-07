@@ -23,6 +23,13 @@ exports.add = async (req, res) => {
     // Accept all fields from AI recipe (image, instructions, prep_time, etc.)
     const data = { ...req.body, userId, createdAt: new Date() };
     delete data.id; // Ensure no 'id' is passed in the body when adding
+
+    // If 'items' array is present, convert it to a pipe-separated 'ingredients' string
+    if (Array.isArray(data.items)) {
+      data.ingredients = data.items.map(item => item.name).join('|');
+      delete data.items; // Remove the 'items' array as we now have 'ingredients' string
+    }
+
     // Ensure all fields are present (fallbacks)
     if (!data.course) data.course = '';
     if (!data.diet) data.diet = '';
