@@ -123,7 +123,7 @@ export default function InventoryPage() {
     return { text: `Expires in ${daysUntilExpiry} days`, color: theme.colors.success };
   };
   const filteredItems = items.filter(item =>
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    item && item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // --- Render ---
