@@ -24,6 +24,12 @@ exports.add = async (req, res) => {
     const data = { ...req.body, userId, createdAt: new Date() };
     delete data.id; // Ensure no 'id' is passed in the body when adding
 
+    // Standardize title to 'name' field
+    if (data.recipe_title) {
+      data.name = data.recipe_title;
+      delete data.recipe_title;
+    }
+
     // If 'items' array is present, convert it to a pipe-separated 'ingredients' string
     if (Array.isArray(data.items)) {
       data.ingredients = data.items.map(item => item.name).join('|');
