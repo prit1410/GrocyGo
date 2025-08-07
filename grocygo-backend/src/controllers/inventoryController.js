@@ -27,7 +27,8 @@ exports.add = async (req, res) => {
     delete data.id; // Ensure no 'id' is passed in the body when adding
     const docRef = await db.collection('user').doc(userId).collection('inventory').add(data);
     const doc = await docRef.get();
-    res.status(201).json({ id: doc.id, ...doc.data() });
+    // Explicitly ensure id is a string and comes from doc.id
+    res.status(201).json({ id: doc.id.toString(), ...doc.data() });
   } catch (err) {
     console.error('add inventory error:', err);
     res.status(500).json({ error: err.message });
