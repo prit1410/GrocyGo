@@ -70,16 +70,31 @@ export default function InventoryPage() {
   }, [refresh]);
 
   // --- Handlers ---
-  const handleAdd = (e) => {
+  const handleAdd = async (e) => {
     e.preventDefault();
-    setItems(prev => {
-      const updated = [...prev, { ...form, id: Date.now() }];
-      inventoryCache = updated;
-      return updated;
-    });
-    setDialogOpen(false);
-    setForm({ name: '', quantity: 1, unit: '', location: '', expiryDate: null, category: '' });
-    setSnackbar({ open: true, message: 'Item added!', severity: 'success' });
+    try {
+      // Prepare the item data to send to the backend
+      const itemToAdd = {
+        name: form.name,
+        quantity: parseInt(form.quantity),
+        unit: form.unit,
+        location: form.location,
+        expiryDate: form.expiryDate ? form.expiryDate : null,
+        category: form.category,
+      };
+      const addedItem = await addInventory(itemToAdd); // Call the API to add the item
+      setItems(prev => {
+        const updated = [...prev, addedItem]; // Add the item returned by the API (which includes the ID)
+        inventoryCache = updated;
+        return updated;
+      });
+      setDialogOpen(false);
+      setForm({ name: '', quantity: 1, unit: '', location: '', expiryDate: null, category: '' });
+      setSnackbar({ open: true, message: 'Item added!', severity: 'success' });
+    } catch (error) {
+      console.error('Failed to add item:', error);
+      setSnackbar({ open: true, message: 'Failed to add item!', severity: 'error' });
+    }
   };
 
   // Update handleDelete to call backend API
