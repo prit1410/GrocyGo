@@ -3,10 +3,15 @@ import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
 
 class AuthScreen extends StatelessWidget {
-  final AuthController controller = Get.find();
+  const AuthScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final AuthController controller = Get.find();
+    final TextEditingController emailController = TextEditingController();
+    final TextEditingController passwordController = TextEditingController();
+    var isLogin = true.obs;
+
     return Scaffold(
       body: Stack(
         fit: StackFit.expand,
@@ -18,23 +23,23 @@ class AuthScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Spacer(),
+                const Spacer(),
                 Obx(
                   () => Text(
-                    controller.isLogin.value
+                    isLogin.value
                         ? "Welcome Back to GrocyGo!"
                         : "Join GrocyGo and Simplify Your Groceries",
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    ),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 24,
+                        ),
                     textAlign: TextAlign.center,
                   ),
                 ),
-                SizedBox(height: 32),
+                const SizedBox(height: 32),
                 TextField(
-                  controller: controller.emailController,
+                  controller: emailController,
                   decoration: InputDecoration(
                     hintText: 'Email',
                     filled: true,
@@ -44,9 +49,9 @@ class AuthScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 TextField(
-                  controller: controller.passwordController,
+                  controller: passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
                     hintText: 'Password',
@@ -57,41 +62,41 @@ class AuthScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                Obx(
-                  () =>
-                      controller.error.value.isNotEmpty
-                          ? Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              controller.error.value,
-                              style: TextStyle(color: Colors.redAccent),
-                            ),
-                          )
-                          : SizedBox.shrink(),
-                ),
-                SizedBox(height: 32),
+                const SizedBox(height: 32),
                 ElevatedButton(
-                  onPressed: controller.authenticate,
+                  onPressed: () {
+                    if (isLogin.value) {
+                      controller.login(
+                        emailController.text.trim(),
+                        passwordController.text.trim(),
+                      );
+                    } else {
+                      controller.createUser(
+                        emailController.text.trim(),
+                        passwordController.text.trim(),
+                      );
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
-                    minimumSize: Size(double.infinity, 48),
+                    minimumSize: const Size(double.infinity, 48),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
                   ),
                   child: Obx(
-                    () => Text(controller.isLogin.value ? 'Login' : 'Sign Up'),
+                    () => Text(isLogin.value ? 'Login' : 'Sign Up'),
                   ),
                 ),
-                SizedBox(height: 16),
+                const SizedBox(height: 16),
                 GestureDetector(
-                  onTap: controller.toggleLogin,
+                  onTap: () => isLogin.value = !isLogin.value,
                   child: Center(
                     child: Obx(
                       () => Text(
-                        controller.isLogin.value
+                        isLogin.value
                             ? "Create New Account"
                             : "Already have an account? Login",
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
@@ -101,7 +106,7 @@ class AuthScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                SizedBox(height: 48),
+                const SizedBox(height: 48),
               ],
             ),
           ),

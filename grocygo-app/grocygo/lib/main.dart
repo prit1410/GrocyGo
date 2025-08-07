@@ -11,6 +11,7 @@ import 'app/controllers/navbar/inventory_controller.dart';
 import 'app/controllers/navbar/recipes_controller.dart';
 import 'app/controllers/navbar/mealplans_controller.dart';
 import 'app/controllers/navbar/shoppinglist_controller.dart';
+import 'app/screens/root.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,21 +22,22 @@ void main() async {
   Get.put(MealPlansController());
   Get.put(ShoppingListController());
   Get.put(AnalyticsController());
-  runApp(GrocyGoApp());
+  runApp(const GrocyGoApp());
 }
 
 class GrocyGoApp extends StatelessWidget {
+  const GrocyGoApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     final ThemeController themeController = Get.put(ThemeController());
     return Obx(
       () => GetMaterialApp(
         title: 'GrocyGo',
-        theme:
-            themeController.isDarkMode.value
-                ? AppTheme.darkTheme
-                : AppTheme.lightTheme,
-        initialRoute: app_routes.AppRoutes.splash,
+        theme: themeController.isDarkMode.value
+            ? AppTheme.darkTheme
+            : AppTheme.lightTheme,
+        home: const Root(),
         getPages: app_routes.AppRoutes.routes,
         debugShowCheckedModeBanner: false,
       ),
