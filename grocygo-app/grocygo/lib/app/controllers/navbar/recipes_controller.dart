@@ -45,22 +45,25 @@ class RecipesController extends GetxController {
     'Sugar Free Diet'
   ];
 
+  var greeting = ''.obs;
+
   @override
   void onInit() {
+    updateGreeting();
     fetchSavedRecipes();
     fetchSuggestedRecipes();
     fetchInventory(); // Fetch inventory on init
     super.onInit();
   }
 
-  String get greeting {
+  void updateGreeting() {
     final hour = DateTime.now().hour;
     if (hour < 12) {
-      return 'Good Morning';
+      greeting.value = 'Good Morning';
     } else if (hour < 17) {
-      return 'Good Afternoon';
+      greeting.value = 'Good Afternoon';
     } else {
-      return 'Good Evening';
+      greeting.value = 'Good Evening';
     }
   }
 

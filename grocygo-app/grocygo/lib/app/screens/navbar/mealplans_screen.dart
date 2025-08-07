@@ -16,6 +16,12 @@ class MealPlansScreen extends GetView<MealPlansController> {
 
   @override
   Widget build(BuildContext context) {
+    // Ensure the controller is initialized if not already
+    if (!Get.isRegistered<MealPlansController>()) {
+      Get.put(MealPlansController());
+    }
+    // Now you can safely access the controller via `controller` property of GetView
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
@@ -103,18 +109,6 @@ class MealPlansScreen extends GetView<MealPlansController> {
                 ),
               ),
             ),
-            Obx(() {
-              if (controller.isLoadingSuggestions.value) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (controller.mealSuggestions.isEmpty) {
-                return const Center(child: Text('No suggestions available.'));
-              }
-              return RecipesListView(
-                recipes: controller.mealSuggestions,
-                inventoryItems: [],
-              );
-            }),
           ],
         ),
       ),

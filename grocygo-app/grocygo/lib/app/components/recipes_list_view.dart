@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/navbar/recipes_controller.dart';
@@ -13,7 +12,8 @@ class RecipesListView extends StatelessWidget {
     super.key,
     required this.recipes,
     this.isSuggestedList = false,
-    required this.inventoryItems, // Require inventoryItems
+    required this.inventoryItems,
+    required RecipesController controller, // Require inventoryItems
   });
 
   @override
@@ -34,24 +34,28 @@ class RecipesListView extends StatelessWidget {
           // Parse ingredients string for both saved and suggested recipes
           List<String> ingredientsArr = [];
           if (recipe['ingredients'] is String) {
-            ingredientsArr = (recipe['ingredients'] as String)
-                .split('|')
-                .map((e) => e.trim())
-                .where((e) => e.isNotEmpty)
-                .toList();
+            ingredientsArr =
+                (recipe['ingredients'] as String)
+                    .split('|')
+                    .map((e) => e.trim())
+                    .where((e) => e.isNotEmpty)
+                    .toList();
           }
 
           // Use actual inventory for matched/missing ingredients
-          final List<String> inventoryNames = inventoryItems
-              .map((item) => item['name'].toString().toLowerCase())
-              .toList();
+          final List<String> inventoryNames =
+              inventoryItems
+                  .map((item) => item['name'].toString().toLowerCase())
+                  .toList();
 
-          final matched = ingredientsArr
-              .where((ing) => inventoryNames.contains(ing.toLowerCase()))
-              .toList();
-          final missing = ingredientsArr
-              .where((ing) => !inventoryNames.contains(ing.toLowerCase()))
-              .toList();
+          final matched =
+              ingredientsArr
+                  .where((ing) => inventoryNames.contains(ing.toLowerCase()))
+                  .toList();
+          final missing =
+              ingredientsArr
+                  .where((ing) => !inventoryNames.contains(ing.toLowerCase()))
+                  .toList();
 
           return GestureDetector(
             onTap: () {
@@ -66,25 +70,28 @@ class RecipesListView extends StatelessWidget {
                   Expanded(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: imageUrl != null && imageUrl.isNotEmpty
-                          ? Image.network(
-                              imageUrl,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                            )
-                          : Container(
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: Icon(Icons.image_not_supported),
+                      child:
+                          imageUrl != null && imageUrl.isNotEmpty
+                              ? Image.network(
+                                imageUrl,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              )
+                              : Container(
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: Icon(Icons.image_not_supported),
+                                ),
                               ),
-                            ),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     title,
                     style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -129,13 +136,19 @@ class RecipesListView extends StatelessWidget {
                           ),
                           Text(
                             'You have: ${matched.join(', ')}',
-                            style: const TextStyle(fontSize: 12, color: Colors.green),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.green,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             'Need to buy: ${missing.join(', ')}',
-                            style: const TextStyle(fontSize: 12, color: Colors.red),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.red,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -148,7 +161,7 @@ class RecipesListView extends StatelessWidget {
                         controller.saveRecipe(recipe);
                       },
                       child: const Text('Save'),
-                    )
+                    ),
                 ],
               ),
             ),
