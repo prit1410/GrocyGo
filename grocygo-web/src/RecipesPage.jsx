@@ -388,7 +388,6 @@ function RecipesPage({ forceOpenDialog }) {
           })
         )}
       </Grid>
-      </Grid>
       <Box sx={{ mt: 4 }}>
         <Typography variant="h6">Recipes per Cuisine</Typography>
         <ResponsiveContainer width="100%" height={220}>
