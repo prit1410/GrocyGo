@@ -117,7 +117,6 @@ class _DatePickerFieldState extends State<DatePickerField> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 4.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children:
                   _weekDays.map((date) {
                     final isSelected =

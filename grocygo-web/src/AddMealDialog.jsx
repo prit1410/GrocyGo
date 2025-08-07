@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, MenuItem, FormControl, InputLabel, Select, TextField } from '@mui/material';
 
-export default function AddMealDialog({ open, onClose, onSave, recipes, aiSuggestions }) {
+export default function AddMealDialog({ open, onClose, onSave, recipes, aiSuggestions, selectedDate }) {
   const [tab, setTab] = useState('my');
   const [selectedRecipe, setSelectedRecipe] = useState('');
   const [customRecipe, setCustomRecipe] = useState('');

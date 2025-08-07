@@ -6,7 +6,11 @@ import 'package:grocygo/app/controllers/navbar/mealplans_controller.dart';
 class AddMealDialog extends StatefulWidget {
   final String category;
 
-  const AddMealDialog({super.key, required this.category});
+  const AddMealDialog({
+    super.key,
+    required this.category,
+    required DateTime date,
+  });
 
   @override
   State<AddMealDialog> createState() => _AddMealDialogState();
@@ -16,6 +20,21 @@ class _AddMealDialogState extends State<AddMealDialog> {
   final MealPlansController controller = Get.find();
   String selectedOption = 'My Recipes';
   String? selectedRecipe;
+  DateTime _selectedDate = DateTime.now(); // Initialize with current date
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +43,21 @@ class _AddMealDialogState extends State<AddMealDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          GestureDetector(
+            onTap: () => _selectDate(context),
+            child: AbsorbPointer(
+              child: TextFormField(
+                controller: TextEditingController(
+                  text: "${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}",
+                ),
+                decoration: const InputDecoration(
+                  labelText: 'Select Date',
+                  suffixIcon: Icon(Icons.calendar_today),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
           DropdownButton<String>(
             value: selectedOption,
             onChanged: (String? newValue) {
@@ -46,7 +80,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
           if (selectedOption != 'Add Custom')
             Obx(() {
               final recipes = selectedOption == 'My Recipes'
-                  ? controller.mealPlans // Replace with actual user recipes
+                  ? controller.mealPlans.values.expand((e) => e.values).whereType<Map<String, dynamic>>().map((e) => e['recipe']).whereType<Map<String, dynamic>>().toList()
                   : controller.mealSuggestions;
               return DropdownField(
                 value: selectedRecipe,
@@ -79,7 +113,7 @@ class _AddMealDialogState extends State<AddMealDialog> {
           onPressed: () {
             if (selectedRecipe != null) {
               final plan = {
-                'date': controller.selectedDate.value!.toIso8601String(),
+                'date': _selectedDate.toIso8601String(),
                 'category': widget.category,
                 'recipe': {
                   'recipe_title': selectedRecipe,

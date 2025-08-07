@@ -35,6 +35,22 @@ class MealPlansApi {
     }
   }
 
+  Future<List<dynamic>> getWeeklyMealPlans(
+      DateTime startDate, DateTime endDate) async {
+    final token = await _getToken();
+    final response = await http.get(
+      Uri.parse(
+          '$baseUrl/meal-plans/weekly?startDate=${startDate.toIso8601String()}&endDate=${endDate.toIso8601String()}'),
+      headers: headers(token: token),
+    );
+
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load weekly meal plans');
+    }
+  }
+
   Future<Map<String, dynamic>> addMealPlan(Map<String, dynamic> plan) async {
     final token = await _getToken();
     final response = await http.post(
