@@ -373,7 +373,7 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
         onPressed: () async {
           try {
             final recipeToSave = {
-              'name': widget.recipe['recipe_title'] ?? widget.recipe['name'],
+              'name': widget.recipe['recipe_title'] ?? widget.recipe['name'] ?? '',
               'description': widget.recipe['description'] ?? '',
               'url': widget.recipe['url'] ?? '',
               'recipe_image': widget.recipe['recipe_image'] ?? '',
