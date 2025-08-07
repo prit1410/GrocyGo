@@ -46,26 +46,29 @@ class MealPlansScreen extends GetView<MealPlansController> {
                 children: [
                   MealPlanSection(
                     title: 'Breakfast',
-                    items: mealPlans
-                        .where((p) => p['category'] == 'Breakfast')
-                        .map((p) => p['recipe'] as Map<String, dynamic>)
-                        .toList(),
+                    items:
+                        mealPlans
+                            .where((p) => p['category'] == 'Breakfast')
+                            .map((p) => p['recipe'] as Map<String, dynamic>)
+                            .toList(),
                     onAdd: () => _showAddMealDialog(context, 'Breakfast'),
                   ),
                   MealPlanSection(
                     title: 'Lunch',
-                    items: mealPlans
-                        .where((p) => p['category'] == 'Lunch')
-                        .map((p) => p['recipe'] as Map<String, dynamic>)
-                        .toList(),
+                    items:
+                        mealPlans
+                            .where((p) => p['category'] == 'Lunch')
+                            .map((p) => p['recipe'] as Map<String, dynamic>)
+                            .toList(),
                     onAdd: () => _showAddMealDialog(context, 'Lunch'),
                   ),
                   MealPlanSection(
                     title: 'Dinner',
-                    items: mealPlans
-                        .where((p) => p['category'] == 'Dinner')
-                        .map((p) => p['recipe'] as Map<String, dynamic>)
-                        .toList(),
+                    items:
+                        mealPlans
+                            .where((p) => p['category'] == 'Dinner')
+                            .map((p) => p['recipe'] as Map<String, dynamic>)
+                            .toList(),
                     onAdd: () => _showAddMealDialog(context, 'Dinner'),
                   ),
                 ],
@@ -107,7 +110,10 @@ class MealPlansScreen extends GetView<MealPlansController> {
               if (controller.mealSuggestions.isEmpty) {
                 return const Center(child: Text('No suggestions available.'));
               }
-              return RecipesListView(recipes: controller.mealSuggestions);
+              return RecipesListView(
+                recipes: controller.mealSuggestions,
+                inventoryItems: [],
+              );
             }),
           ],
         ),

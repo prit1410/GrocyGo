@@ -252,10 +252,11 @@ function RecipesPage({ forceOpenDialog }) {
           </Grid>
         ) : (
           Array.isArray(recipes) && recipes.map(recipe => {
-            // Prepare items for "You have" and "Need to buy" sections
-            let ingredientsArr = Array.isArray(recipe.items)
-              ? recipe.items.map(item => (item.name || '').toLowerCase())
-              : [];
+            // Parse ingredients string to array for all recipes
+            let ingredientsArr = [];
+            if (recipe.ingredients) {
+              ingredientsArr = recipe.ingredients.split('|').map(x => x.trim().toLowerCase()).filter(Boolean);
+            }
             let invNames = Array.isArray(inventoryItems)
               ? inventoryItems.map(x => (x.name || '').toLowerCase())
               : [];
@@ -340,13 +341,13 @@ function RecipesPage({ forceOpenDialog }) {
                       {recipe.course && <Typography variant="caption" color="primary" sx={{ mr: 1, fontWeight: 600, bgcolor: '#e3f2fd', px: 1, borderRadius: 1 }}>Course: {recipe.course}</Typography>}
                       {recipe.diet && <Typography variant="caption" color="secondary" sx={{ fontWeight: 600, bgcolor: '#fce4ec', px: 1, borderRadius: 1 }}>Diet: {recipe.diet}</Typography>}
                     </Box>
-                    {Array.isArray(recipe.items) && recipe.items.length > 0 && (
+                    {recipe.ingredients && (
                       <Box sx={{ mb: 1 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center'}}>
-                          {recipe.items.map((item, idx) => (
+                          {ingredientsArr.map((ing, idx) => (
                             <Box key={idx} sx={{ fontSize: 13, bgcolor: theme.colors.hover, px: 1, borderRadius: 1, mr: 0.5 }}>
-                              {item.name}
+                              {ing}
                             </Box>
                           ))}
                         </Box>
@@ -386,6 +387,7 @@ function RecipesPage({ forceOpenDialog }) {
             );
           })
         )}
+      </Grid>
       </Grid>
       <Box sx={{ mt: 4 }}>
         <Typography variant="h6">Recipes per Cuisine</Typography>

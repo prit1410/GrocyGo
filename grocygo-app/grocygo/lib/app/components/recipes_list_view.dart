@@ -7,9 +7,14 @@ import '../screens/recipe_details_screen.dart';
 class RecipesListView extends StatelessWidget {
   final List recipes;
   final bool isSuggestedList;
+  final List<Map<String, dynamic>> inventoryItems; // Add inventoryItems
 
-  const RecipesListView(
-      {super.key, required this.recipes, this.isSuggestedList = false});
+  const RecipesListView({
+    super.key,
+    required this.recipes,
+    this.isSuggestedList = false,
+    required this.inventoryItems, // Require inventoryItems
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -22,6 +27,32 @@ class RecipesListView extends StatelessWidget {
         itemCount: recipes.length,
         itemBuilder: (context, index) {
           final recipe = recipes[index];
+          // Use recipe_title for suggested recipes, name for saved recipes
+          final title = recipe['recipe_title'] ?? recipe['name'] ?? 'No Title';
+          final imageUrl = recipe['recipe_image'];
+
+          // Parse ingredients string for both saved and suggested recipes
+          List<String> ingredientsArr = [];
+          if (recipe['ingredients'] is String) {
+            ingredientsArr = (recipe['ingredients'] as String)
+                .split('|')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+          }
+
+          // Use actual inventory for matched/missing ingredients
+          final List<String> inventoryNames = inventoryItems
+              .map((item) => item['name'].toString().toLowerCase())
+              .toList();
+
+          final matched = ingredientsArr
+              .where((ing) => inventoryNames.contains(ing.toLowerCase()))
+              .toList();
+          final missing = ingredientsArr
+              .where((ing) => !inventoryNames.contains(ing.toLowerCase()))
+              .toList();
+
           return GestureDetector(
             onTap: () {
               Get.to(() => RecipeDetailsScreen(recipe: recipe));
@@ -35,10 +66,9 @@ class RecipesListView extends StatelessWidget {
                   Expanded(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: recipe['recipe_image'] != null &&
-                              recipe['recipe_image'].isNotEmpty
+                      child: imageUrl != null && imageUrl.isNotEmpty
                           ? Image.network(
-                              recipe['recipe_image'],
+                              imageUrl,
                               fit: BoxFit.cover,
                               width: double.infinity,
                             )
@@ -52,7 +82,7 @@ class RecipesListView extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    recipe['name'] ?? recipe['recipe_title'] ?? 'No Title',
+                    title,
                     style: const TextStyle(
                         fontSize: 16, fontWeight: FontWeight.bold),
                     maxLines: 2,
@@ -84,6 +114,34 @@ class RecipesListView extends StatelessWidget {
                       ),
                     ],
                   ),
+                  // Display ingredients and matched/missing
+                  if (ingredientsArr.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ingredients: ${ingredientsArr.join(', ')}',
+                            style: const TextStyle(fontSize: 12),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'You have: ${matched.join(', ')}',
+                            style: const TextStyle(fontSize: 12, color: Colors.green),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'Need to buy: ${missing.join(', ')}',
+                            style: const TextStyle(fontSize: 12, color: Colors.red),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
                   if (isSuggestedList)
                     ElevatedButton(
                       onPressed: () {
