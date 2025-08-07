@@ -68,10 +68,8 @@ class RecipesListView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width:
-                        double
-                            .infinity, // Take full width of the parent Container
-                    height: 150, // Fixed height for the image container
+                    width: 150, // Fixed width for square image
+                    height: 150, // Fixed height for square image
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child:

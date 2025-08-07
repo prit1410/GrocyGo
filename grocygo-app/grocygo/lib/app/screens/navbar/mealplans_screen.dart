@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:grocygo/app/components/add_meal_dialog.dart';
-import 'package:grocygo/app/components/date_picker_field.dart';
 import 'package:grocygo/app/components/dropdown_field.dart';
 import 'package:grocygo/app/components/meal_plan_section.dart';
-import 'package:grocygo/app/components/recipes_list_view.dart';
 import 'package:grocygo/app/controllers/navbar/mealplans_controller.dart';
 
 class MealPlansScreen extends GetView<MealPlansController> {
   const MealPlansScreen({super.key});
 
-  void _showAddMealDialog(BuildContext context, String category) {
-    Get.dialog(AddMealDialog(category: category));
+  void _showAddMealDialog(
+    BuildContext context,
+    String category,
+    DateTime date,
+  ) {
+    Get.dialog(AddMealDialog(category: category, date: date));
   }
 
   @override
@@ -34,10 +36,48 @@ class MealPlansScreen extends GetView<MealPlansController> {
             const Text('Plan your meals based on available ingredients'),
             const SizedBox(height: 20),
             Obx(
-              () => DatePickerField(
-                label: 'Select Date',
-                value: controller.selectedDate.value,
-                onChanged: controller.updateSelectedDate,
+              () => Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios),
+                    onPressed: controller.goToPreviousWeek,
+                  ),
+                  Text(
+                    controller.getWeekRange(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward_ios),
+                    onPressed: controller.goToNextWeek,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Obx(
+              () => Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios),
+                    onPressed: controller.goToPreviousWeek,
+                  ),
+                  Text(
+                    controller.getWeekRange(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_forward_ios),
+                    onPressed: controller.goToNextWeek,
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 20),
@@ -47,37 +87,55 @@ class MealPlansScreen extends GetView<MealPlansController> {
               textAlign: TextAlign.center,
             ),
             Obx(() {
-              final mealPlans = controller.filteredMealPlans;
+              if (controller.isLoadingPlans.value) {
+                return const Center(child: CircularProgressIndicator());
+              }
               return Column(
-                children: [
-                  MealPlanSection(
-                    title: 'Breakfast',
-                    items:
-                        mealPlans
-                            .where((p) => p['category'] == 'Breakfast')
-                            .map((p) => p['recipe'] as Map<String, dynamic>)
-                            .toList(),
-                    onAdd: () => _showAddMealDialog(context, 'Breakfast'),
-                  ),
-                  MealPlanSection(
-                    title: 'Lunch',
-                    items:
-                        mealPlans
-                            .where((p) => p['category'] == 'Lunch')
-                            .map((p) => p['recipe'] as Map<String, dynamic>)
-                            .toList(),
-                    onAdd: () => _showAddMealDialog(context, 'Lunch'),
-                  ),
-                  MealPlanSection(
-                    title: 'Dinner',
-                    items:
-                        mealPlans
-                            .where((p) => p['category'] == 'Dinner')
-                            .map((p) => p['recipe'] as Map<String, dynamic>)
-                            .toList(),
-                    onAdd: () => _showAddMealDialog(context, 'Dinner'),
-                  ),
-                ],
+                children:
+                    controller.daysOfWeek.map((dayName) {
+                      final dayDate = controller.currentWeekStart.value.add(
+                        Duration(days: controller.daysOfWeek.indexOf(dayName)),
+                      );
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 8.0,
+                            ),
+                            child: Text(
+                              '$dayName - ${dayDate.day}/${dayDate.month}',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          ...controller.mealSlots.map((slot) {
+                            final mealPlan =
+                                controller.mealPlans[dayName]?[slot];
+                            return MealPlanSection(
+                              title: slot,
+                              items:
+                                  mealPlan != null
+                                      ? [
+                                        mealPlan['recipe']
+                                            as Map<String, dynamic>,
+                                      ]
+                                      : [],
+                              onAdd:
+                                  () => _showAddMealDialog(
+                                    context,
+                                    slot,
+                                    dayDate,
+                                  ),
+                            );
+                          }).toList(),
+                          const SizedBox(height: 10),
+                        ],
+                      );
+                    }).toList(),
               );
             }),
             const SizedBox(height: 20),
