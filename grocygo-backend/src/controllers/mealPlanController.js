@@ -13,14 +13,52 @@ exports.getAll = async (req, res) => {
   }
 };
 
+exports.getWeeklyMealPlans = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    if (!userId) throw new Error('User not authenticated');
+
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'startDate and endDate are required query parameters.' });
+    }
+
+    const startDateTime = new Date(startDate);
+    const endDateTime = new Date(endDate);
+
+    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+      return res.status(400).json({ error: 'Invalid date format for startDate or endDate.' });
+    }
+
+    const snapshot = await db.collection('user').doc(userId).collection('mealPlans')
+      .where('date', '>=', startDateTime)
+      .where('date', '<=', endDateTime)
+      .orderBy('date', 'asc')
+      .get();
+
+    const items = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      date: doc.data().date.toDate(), // Convert Firestore Timestamp to JavaScript Date object
+    }));
+    res.json(items);
+  } catch (err) {
+    console.error('getWeeklyMealPlans error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.add = async (req, res) => {
   try {
     const userId = req.user.uid;
     if (!userId) throw new Error('User not authenticated');
-    const data = { ...req.body, userId, createdAt: new Date() };
+    // Ensure date is a Firestore Timestamp if provided, otherwise use current date
+    const date = req.body.date ? new Date(req.body.date) : new Date();
+    const data = { ...req.body, userId, createdAt: new Date(), date };
     const docRef = await db.collection('user').doc(userId).collection('mealPlans').add(data);
     const doc = await docRef.get();
-    res.status(201).json({ id: doc.id, ...doc.data() });
+    res.status(201).json({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() });
   } catch (err) {
     console.error('add mealPlan error:', err);
     res.status(500).json({ error: err.message });
@@ -33,10 +71,15 @@ exports.update = async (req, res) => {
     if (!userId) throw new Error('User not authenticated');
     const id = req.params.id;
     const docRef = db.collection('user').doc(userId).collection('mealPlans').doc(id);
-    await docRef.update(req.body);
+    const updateData = { ...req.body };
+    // Convert date string to Date object if present in updateData
+    if (updateData.date) {
+      updateData.date = new Date(updateData.date);
+    }
+    await docRef.update(updateData);
     const doc = await docRef.get();
     if (!doc.exists) return res.status(404).json({ error: 'Not found' });
-    res.json({ id: doc.id, ...doc.data() });
+    res.json({ id: doc.id, ...doc.data(), date: doc.data().date.toDate() });
   } catch (err) {
     console.error('update mealPlan error:', err);
     res.status(500).json({ error: err.message });

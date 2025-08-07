@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { getMealPlans, addMealPlan, deleteMealPlan, getRecipes } from './api';
+import { getMealPlans, addMealPlan, deleteMealPlan, getRecipes, fetchWeeklyMealPlans } from './api';
 import AddMealDialog from './AddMealDialog';
 import IngredientUsageDialog from './IngredientUsageDialog';
 import { auth } from './firebase';
@@ -33,7 +33,6 @@ const MEAL_PLANS_LS_KEY = 'mealPlansCache';
 const AI_SUGGEST_LS_KEY = 'aiMealSuggestCache';
 
 
-
 export default function MealPlansPage() {
   // State declarations must come first!
   const [aiDialogOpen, setAIDialogOpen] = useState(false);
@@ -45,6 +44,7 @@ export default function MealPlansPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDay, setDialogDay] = useState('');
   const [dialogMealType, setDialogMealType] = useState('');
+  const [dialogDate, setDialogDate] = useState(null); // New state for date in dialog
   const [completeDialog, setCompleteDialog] = useState({ open: false, plan: null });
   const [ingredientDialog, setIngredientDialog] = useState({ open: false, plan: null, ingredients: [] });
   const [completedMeals, setCompletedMeals] = useState({}); // { planId: true }
@@ -61,36 +61,30 @@ export default function MealPlansPage() {
     localStorage.setItem('mealPlanDiet', selectedDiet);
   }, [selectedDiet]);
 
+  // State for weekly view
+  const [currentWeekStart, setCurrentWeekStart] = useState(() => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 for Sunday, 1 for Monday, etc.
+    const diff = today.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust to Monday of the current week
+    const monday = new Date(today.setDate(diff));
+    monday.setHours(0, 0, 0, 0); // Set to start of the day
+    return monday;
+  });
+
   useEffect(() => {
     const unsub = auth.onAuthStateChanged(setUser);
     return unsub;
   }, []);
 
-
-
   // On user login, restore meal plans and recipes, but do not fetch AI suggestions yet
   useEffect(() => {
     if (user && firstLoad.current) {
-      // Try to restore meal plans from localStorage first
-      const ls = localStorage.getItem(MEAL_PLANS_LS_KEY);
-      if (ls) {
-        try {
-          const week = JSON.parse(ls);
-          setPlans(week);
-          mealPlansCache = week;
-        } catch {
-          fetchPlans();
-        }
-      } else if (mealPlansCache) {
-        setPlans(mealPlansCache);
-      } else {
-        fetchPlans();
-      }
+      fetchPlans(); // Always fetch from API for weekly view
       fetchRecipes();
       firstLoad.current = false;
     }
     // eslint-disable-next-line
-  }, [user]);
+  }, [user, currentWeekStart]); // Re-fetch when week changes
 
   // On mount, restore AI suggestions cache from localStorage (only once)
   useEffect(() => {
@@ -139,19 +133,25 @@ export default function MealPlansPage() {
     setRecipes(res.data);
   };
 
-
   const fetchPlans = async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
-      const res = await getMealPlans();
+      const currentWeekEnd = new Date(currentWeekStart);
+      currentWeekEnd.setDate(currentWeekEnd.getDate() + 6); // End of the week (Sunday)
+      currentWeekEnd.setHours(23, 59, 59, 999); // Set to end of the day
+
+      const res = await fetchWeeklyMealPlans(currentWeekStart.toISOString(), currentWeekEnd.toISOString());
       // Transform to { Monday: { Breakfast: {...}, ... }, ... }
       const week = {};
       daysOfWeek.forEach(day => {
         week[day] = { Breakfast: null, Lunch: null, Dinner: null };
       });
+
       res.data.forEach(plan => {
-        if (week[plan.day] && plan.mealType) {
-          week[plan.day][plan.mealType] = plan;
+        const planDate = new Date(plan.date); // Ensure it's a Date object
+        const dayName = daysOfWeek[planDate.getDay() === 0 ? 6 : planDate.getDay() - 1]; // Adjust for Monday start
+        if (week[dayName] && plan.mealType) {
+          week[dayName][plan.mealType] = plan;
         }
       });
       setPlans(week);
@@ -165,10 +165,10 @@ export default function MealPlansPage() {
     }
   };
 
-
-  const handleAddMeal = (day, mealType) => {
+  const handleAddMeal = (day, mealType, date) => {
     setDialogDay(day);
     setDialogMealType(mealType);
+    setDialogDate(date); // Set the date for the dialog
     setDialogOpen(true);
   };
 
@@ -190,7 +190,7 @@ export default function MealPlansPage() {
     }
     if (!name) return;
     // Add recipeId only if user selected from "my recipes"
-    const payload = { day: dialogDay, mealType: dialogMealType, name };
+    const payload = { day: dialogDay, mealType: dialogMealType, name, date: dialogDate.toISOString() }; // Include date
     if (recipeId) payload.recipeId = recipeId;
     await addMealPlan(payload);
     setDialogOpen(false);
@@ -274,6 +274,24 @@ export default function MealPlansPage() {
   const handleAISuggestionClick = (suggestion) => {
     setSelectedAISuggestion(suggestion);
     setAIDialogOpen(true);
+  };
+
+  const goToPreviousWeek = () => {
+    const newDate = new Date(currentWeekStart);
+    newDate.setDate(newDate.getDate() - 7);
+    setCurrentWeekStart(newDate);
+  };
+
+  const goToNextWeek = () => {
+    const newDate = new Date(currentWeekStart);
+    newDate.setDate(newDate.getDate() + 7);
+    setCurrentWeekStart(newDate);
+  };
+
+  const getWeekRange = () => {
+    const endOfWeek = new Date(currentWeekStart);
+    endOfWeek.setDate(endOfWeek.getDate() + 6);
+    return `${currentWeekStart.toLocaleDateString()} - ${endOfWeek.toLocaleDateString()}`;
   };
 
   if (!user) {
@@ -397,155 +415,133 @@ export default function MealPlansPage() {
                 {loading ? 'Refreshing...' : 'Refresh'}
               </button>
             </div>
+
+            {/* Date Navigation */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <button onClick={goToPreviousWeek} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: theme.colors.text }}>&lt;</button>
+              <h3 style={{ margin: 0, color: theme.colors.text }}>{getWeekRange()}</h3>
+              <button onClick={goToNextWeek} style={{ background: 'none', border: 'none', fontSize: 24, cursor: 'pointer', color: theme.colors.text }}>&gt;</button>
+            </div>
+
             {loading ? (
               <div style={{ color: theme.colors.textSecondary, textAlign: 'center', margin: '48px 0', fontSize: 18 }}>Loading...</div>
             ) : (
               <>
-            {daysOfWeek.map(day => (
-              <div key={day} style={{ marginBottom: 16 }}>
-                <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8, color: theme.colors.text }}>{day}</div>
-                <div style={{ display: 'flex', gap: 16 }}>
-                  {mealSlots.map(slot => {
-                    const plan = plans[day]?.[slot];
-                    const isPast = plan && isMealPast(day, slot);
-                    const isCompleted = plan && completedMeals[plan.id];
-                    return (
-                      <div key={slot} style={{
-                        flex: 1,
-                        border: `1px solid ${theme.colors.divider}`,
-                        borderRadius: 8,
-                        padding: 16,
-                        minHeight: 80,
-                        background: plan ? theme.colors.cardBg : theme.colors.hover,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        justifyContent: 'center',
-                        position: 'relative',
-                        color: theme.colors.text
-                      }}>
-                        <div style={{ fontWeight: 500, color: theme.colors.textSecondary, marginBottom: 4 }}>{slot}</div>
-                        {plan ? (
-                          <>
-                            <div style={{ fontWeight: 600, color: theme.colors.text }}>{plan.name}</div>
-                            <div style={{ fontSize: 12, color: theme.colors.textSecondary }}>{plan.time || (slot === 'Breakfast' ? '8:00 AM' : slot === 'Lunch' ? '12:30 PM' : '7:00 PM')}</div>
-                            <button
-                              style={{
-                                position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: theme.colors.error, cursor: deletingPlanId === plan.id ? 'not-allowed' : 'pointer'
-                              }}
-                              onClick={() => handleDeleteMeal(plan.id)}
-                              disabled={deletingPlanId === plan.id}
-                              title="Delete"
-                            >
-                              {deletingPlanId === plan.id ? (
-                                <span style={{ fontSize: 14 }}>Deleting...</span>
-                              ) : (
-                                '✕'
-                              )}
-                            </button>
-                            {/* Show completed status or "Completed" button if in the past */}
-                            {isPast && !isCompleted && (
-                              <button
-                                style={{
-                                  marginTop: 8,
-                                  background: theme.colors.primary,
-                                  color: theme.colors.paper,
-                                  border: 'none',
-                                  borderRadius: 6,
-                                  padding: '4px 12px',
-                                  cursor: 'pointer',
-                                  fontSize: 14
-                                }}
-                                onClick={() => handleCompleteMeal(plan)}
-                              >Completed?</button>
-                            )}
-                            {isCompleted && (
-                              <div style={{ marginTop: 8, color: theme.colors.primary, fontWeight: 500 }}>✔ Marked as made & inventory updated</div>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              style={{
-                                background: theme.colors.hover,
-                                border: `1px dashed ${theme.colors.divider}`,
-                                borderRadius: 6,
-                                padding: '6px 12px',
-                                color: theme.colors.textSecondary,
-                                cursor: 'pointer'
-                              }}
-                              onClick={() => handleAddMeal(day, slot)}
-                            >+ Add {slot.toLowerCase()}</button>
-                            <AddMealDialog
-                              open={dialogOpen}
-                              onClose={() => setDialogOpen(false)}
-                              onSave={handleSaveMeal}
-                              recipes={recipes}
-                              aiSuggestions={(() => {
-                                if (!Array.isArray(suggestions)) return [];
-                                // Show all unique AI suggestions for the week (all 3 courses)
-                                const seen = new Set();
-                                const arr = suggestions.filter(s => {
-                                  const key = (s.recipe_title || s.name || '') + (s.course || '');
-                                  if (seen.has(key)) return false;
-                                  seen.add(key);
-                                  return true;
-                                });
-                                return arr.map((s, idx) => ({
-                                  id: s.id || s.recipe_id || idx, // fallback to idx if no id
-                                  name: s.recipe_title || s.name || '',
-                                  ...s
-                                }));
-                              })()}
-                            />
-                          </>
-                        )}
+                {daysOfWeek.map((day, index) => {
+                  const dayDate = new Date(currentWeekStart);
+                  dayDate.setDate(currentWeekStart.getDate() + index);
+                  return (
+                    <div key={day} style={{ marginBottom: 16 }}>
+                      <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 8, color: theme.colors.text }}>
+                        {day} - {dayDate.toLocaleDateString()}
                       </div>
-                    );
-                  })}
-          {/* Complete meal dialog */}
-          {completeDialog.open && (
-            <div style={{
-              position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
-              background: '#0008', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center'
-            }}>
-              <div style={{
-                background: theme.colors.paper,
-                borderRadius: 12,
-                padding: 32,
-                minWidth: 320,
-                maxWidth: 400,
-                color: theme.colors.text
-              }}>
-                <div style={{ fontWeight: 600, fontSize: 18, marginBottom: 16 }}>Did you make this meal?</div>
-                <div style={{ display: 'flex', gap: 16, justifyContent: 'center' }}>
-                  <button
-                    style={{ background: theme.colors.primary, color: theme.colors.paper, border: 'none', borderRadius: 6, padding: '8px 24px', fontSize: 16, cursor: 'pointer' }}
-                    onClick={() => handleMadeMeal(completeDialog.plan)}
-                  >Yes</button>
-                  <button
-                    style={{ background: theme.colors.hover, color: theme.colors.text, border: 'none', borderRadius: 6, padding: '8px 24px', fontSize: 16, cursor: 'pointer' }}
-                    onClick={handleNotMadeMeal}
-                  >No</button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Ingredient usage dialog */}
-          <IngredientUsageDialog
-            open={ingredientDialog.open}
-            onClose={() => setIngredientDialog({ open: false, plan: null, ingredients: [] })}
-            ingredients={ingredientDialog.ingredients}
-            onConfirm={handleConfirmIngredients}
-          />
-                  </div>
-                </div>
-              ))}
-                </>
-              )}
-            </div>
+                      <div style={{ display: 'flex', gap: 16 }}>
+                        {mealSlots.map(slot => {
+                          const plan = plans[day]?.[slot];
+                          const isPast = plan && isMealPast(day, slot);
+                          const isCompleted = plan && completedMeals[plan.id];
+                          return (
+                            <div key={slot} style={{
+                              flex: 1,
+                              border: `1px solid ${theme.colors.divider}`,
+                              borderRadius: 8,
+                              padding: 16,
+                              minHeight: 80,
+                              background: plan ? theme.colors.cardBg : theme.colors.hover,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'flex-start',
+                              justifyContent: 'center',
+                              position: 'relative',
+                              color: theme.colors.text
+                            }}>
+                              <div style={{ fontWeight: 500, color: theme.colors.textSecondary, marginBottom: 4 }}>{slot}</div>
+                              {plan ? (
+                                <>
+                                  <div style={{ fontWeight: 600, color: theme.colors.text }}>{plan.name}</div>
+                                  <div style={{ fontSize: 12, color: theme.colors.textSecondary }}>{plan.time || (slot === 'Breakfast' ? '8:00 AM' : slot === 'Lunch' ? '12:30 PM' : '7:00 PM')}</div>
+                                  <button
+                                    style={{
+                                      position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: theme.colors.error, cursor: deletingPlanId === plan.id ? 'not-allowed' : 'pointer'
+                                    }}
+                                    onClick={() => handleDeleteMeal(plan.id)}
+                                    disabled={deletingPlanId === plan.id}
+                                    title="Delete"
+                                  >
+                                    {deletingPlanId === plan.id ? (
+                                      <span style={{ fontSize: 14 }}>Deleting...</span>
+                                    ) : (
+                                      '✕'
+                                    )}
+                                  </button>
+                                  {/* Show completed status or "Completed" button if in the past */}
+                                  {isPast && !isCompleted && (
+                                    <button
+                                      style={{
+                                        marginTop: 8,
+                                        background: theme.colors.primary,
+                                        color: theme.colors.paper,
+                                        border: 'none',
+                                        borderRadius: 6,
+                                        padding: '4px 12px',
+                                        cursor: 'pointer',
+                                        fontSize: 14
+                                      }}
+                                      onClick={() => handleCompleteMeal(plan)}
+                                    >Completed?</button>
+                                  )}
+                                  {isCompleted && (
+                                    <div style={{ marginTop: 8, color: theme.colors.primary, fontWeight: 500 }}>✔ Marked as made & inventory updated</div>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    style={{
+                                      background: theme.colors.hover,
+                                      border: `1px dashed ${theme.colors.divider}`,
+                                      borderRadius: 6,
+                                      padding: '6px 12px',
+                                      color: theme.colors.textSecondary,
+                                      cursor: 'pointer'
+                                    }}
+                                    onClick={() => handleAddMeal(day, slot, dayDate)} // Pass dayDate
+                                  >+ Add {slot.toLowerCase()}</button>
+                                  <AddMealDialog
+                                    open={dialogOpen}
+                                    onClose={() => setDialogOpen(false)}
+                                    onSave={handleSaveMeal}
+                                    recipes={recipes}
+                                    aiSuggestions={(() => {
+                                      if (!Array.isArray(suggestions)) return [];
+                                      // Show all unique AI suggestions for the week (all 3 courses)
+                                      const seen = new Set();
+                                      const arr = suggestions.filter(s => {
+                                        const key = (s.recipe_title || s.name || '') + (s.course || '');
+                                        if (seen.has(key)) return false;
+                                        seen.add(key);
+                                        return true;
+                                      });
+                                      return arr.map((s, idx) => ({
+                                        id: s.id || s.recipe_id || idx, // fallback to idx if no id
+                                        name: s.recipe_title || s.name || '',
+                                        ...s
+                                      }));
+                                    })()}
+                                  />
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
           </div>
+        </div>
         {/* AI Meal Suggestions box (right/sidebar) */}
         <div
           className="mealplans-responsive-ai"

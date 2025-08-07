@@ -21,7 +21,7 @@ class RecipesListView extends StatelessWidget {
     final RecipesController controller = Get.find();
 
     return SizedBox(
-      height: 250,
+      height: 359,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: recipes.length,
@@ -67,15 +67,18 @@ class RecipesListView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
+                  SizedBox(
+                    width:
+                        double
+                            .infinity, // Take full width of the parent Container
+                    height: 150, // Fixed height for the image container
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child:
                           imageUrl != null && imageUrl.isNotEmpty
                               ? Image.network(
                                 imageUrl,
-                                fit: BoxFit.cover,
-                                width: double.infinity,
+                                fit: BoxFit.cover, // Cover the entire box
                               )
                               : Container(
                                 color: Colors.grey[300],

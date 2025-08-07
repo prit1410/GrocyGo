@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 router.use(auth);
 
 router.get('/', mealPlanController.getAll);
+router.get('/weekly', mealPlanController.getWeeklyMealPlans); // New route for weekly meal plans
 router.post('/', mealPlanController.add);
 router.put('/:id', mealPlanController.update);
 router.delete('/:id', mealPlanController.remove);

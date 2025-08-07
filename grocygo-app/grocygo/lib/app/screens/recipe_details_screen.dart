@@ -29,7 +29,8 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
 
   Future<void> _fetchInventory() async {
     try {
-      final inventory = await InventoryApi().fetchInventory(); // Use InventoryApi
+      final inventory =
+          await InventoryApi().fetchInventory(); // Use InventoryApi
       setState(() {
         _inventory = inventory;
         _isLoadingInventory = false;
@@ -91,19 +92,20 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
               SizedBox(
                 height: screenHeight * (constraints.maxWidth > 600 ? 0.5 : 0.4),
                 width: double.infinity,
-                child: widget.recipe['recipe_image'] != null &&
-                        widget.recipe['recipe_image'].isNotEmpty
-                    ? Image.network(
-                        widget.recipe['recipe_image'],
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const Center(
-                          child: Icon(Icons.broken_image, size: 100),
+                child:
+                    widget.recipe['recipe_image'] != null &&
+                            widget.recipe['recipe_image'].isNotEmpty
+                        ? Image.network(
+                          widget.recipe['recipe_image'],
+                          fit: BoxFit.cover,
+                          errorBuilder:
+                              (context, error, stackTrace) => const Center(
+                                child: Icon(Icons.broken_image, size: 100),
+                              ),
+                        )
+                        : const Center(
+                          child: Icon(Icons.image_not_supported, size: 100),
                         ),
-                      )
-                    : const Center(
-                        child: Icon(Icons.image_not_supported, size: 100),
-                      ),
               ),
               // Back button
               Positioned(
@@ -139,7 +141,7 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              widget.recipe['recipe_title'] ?? 'No Title',
+                              widget.recipe['recipe_title'] ?? widget.recipe['name'] ?? 'No Title',
                               style: TextStyle(
                                 fontSize: titleSize,
                                 fontWeight: FontWeight.bold,
@@ -176,9 +178,15 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
                                     runSpacing: 4.0,
                                     children: [
                                       _buildInfoChip(
-                                          'Course', widget.recipe['course'], chipSize),
+                                        'Course',
+                                        widget.recipe['course'],
+                                        chipSize,
+                                      ),
                                       _buildInfoChip(
-                                          'Diet', widget.recipe['diet'], chipSize),
+                                        'Diet',
+                                        widget.recipe['diet'],
+                                        chipSize,
+                                      ),
                                     ],
                                   ),
                                 ),
@@ -208,9 +216,10 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
                                   Text(
                                     widget.recipe['description'] ?? '',
                                     maxLines: _isExpanded ? null : 2,
-                                    overflow: _isExpanded
-                                        ? TextOverflow.visible
-                                        : TextOverflow.ellipsis,
+                                    overflow:
+                                        _isExpanded
+                                            ? TextOverflow.visible
+                                            : TextOverflow.ellipsis,
                                     style: TextStyle(fontSize: bodySize),
                                   ),
                                   if (widget.recipe['description'] != null &&
@@ -281,7 +290,9 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
             'Ingredients:',
             style: TextStyle(fontSize: bodySize, fontWeight: FontWeight.bold),
           ),
-          ..._recipeIngredients.map((e) => Text('- $e', style: TextStyle(fontSize: bodySize))),
+          ..._recipeIngredients.map(
+            (e) => Text('- $e', style: TextStyle(fontSize: bodySize)),
+          ),
           const SizedBox(height: 16),
           Text(
             '✔️ You have:',
@@ -291,7 +302,9 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
               color: Colors.green,
             ),
           ),
-          ..._haveIngredients.map((e) => Text('- $e', style: TextStyle(fontSize: bodySize))),
+          ..._haveIngredients.map(
+            (e) => Text('- $e', style: TextStyle(fontSize: bodySize)),
+          ),
           const SizedBox(height: 16),
           Text(
             '❌ Need to buy:',
@@ -301,17 +314,20 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
               color: Colors.red,
             ),
           ),
-          ..._needIngredients.map((e) => Text('- $e', style: TextStyle(fontSize: bodySize))),
+          ..._needIngredients.map(
+            (e) => Text('- $e', style: TextStyle(fontSize: bodySize)),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildInstructionsTab(double bodySize) {
-    final instructions = (widget.recipe['instructions'] as String? ?? '')
-        .split('|')
-        .where((s) => s.trim().isNotEmpty)
-        .toList();
+    final instructions =
+        (widget.recipe['instructions'] as String? ?? '')
+            .split('|')
+            .where((s) => s.trim().isNotEmpty)
+            .toList();
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -332,9 +348,15 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('${index + 1}. ', style: TextStyle(fontSize: bodySize)),
+                    Text(
+                      '${index + 1}. ',
+                      style: TextStyle(fontSize: bodySize),
+                    ),
                     Expanded(
-                      child: Text(instructions[index].trim(), style: TextStyle(fontSize: bodySize)),
+                      child: Text(
+                        instructions[index].trim(),
+                        style: TextStyle(fontSize: bodySize),
+                      ),
                     ),
                   ],
                 ),
@@ -373,7 +395,7 @@ class _RecipeDetailsScreenState extends State<RecipeDetailsScreen>
         onPressed: () async {
           try {
             final recipeToSave = {
-              'name': widget.recipe['recipe_title'] ?? widget.recipe['name'] ?? '',
+              'name': widget.recipe['name'] ?? widget.recipe['name'] ?? '',
               'description': widget.recipe['description'] ?? '',
               'url': widget.recipe['url'] ?? '',
               'recipe_image': widget.recipe['recipe_image'] ?? '',
