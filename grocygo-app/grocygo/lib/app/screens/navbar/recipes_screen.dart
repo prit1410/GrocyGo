@@ -24,13 +24,13 @@ class RecipesScreen extends StatelessWidget {
                 children: [
                   const Icon(Icons.wb_sunny, size: 30),
                   const SizedBox(width: 8),
-                  Text(
-                    controller.greeting,
+                  Obx(() => Text(
+                    controller.greeting.value,
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
-                  ),
+                  )),
                   const Spacer(),
                   Text(
                     user?.displayName ?? 'User',
@@ -65,10 +65,11 @@ class RecipesScreen extends StatelessWidget {
                 if (controller.savedRecipes.isEmpty) {
                   return const Center(child: Text('No saved recipes yet.'));
                 }
-                return Obx(() => RecipesListView(
+                return RecipesListView(
                       recipes: controller.savedRecipes,
                       inventoryItems: controller.inventoryItems,
-                    ));
+                      controller: controller,
+                    );
               }),
               const SizedBox(height: 24),
 
@@ -161,11 +162,12 @@ class RecipesScreen extends StatelessWidget {
                 if (controller.suggestedRecipes.isEmpty) {
                   return const Center(child: Text('No suggestions available.'));
                 }
-                return Obx(() => RecipesListView(
+                return RecipesListView(
                       recipes: controller.suggestedRecipes,
                       isSuggestedList: true,
                       inventoryItems: controller.inventoryItems,
-                    ));
+                      controller: controller,
+                    );
               }),
             ],
           ),
