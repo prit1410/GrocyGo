@@ -94,6 +94,14 @@ export const getMealPlans = async () => {
   });
 };
 
+export const fetchWeeklyMealPlans = async (startDate, endDate) => {
+  const token = await auth.currentUser?.getIdToken();
+  return axios.get(`${API_BASE}/meal-plans/weekly`, {
+    params: { startDate, endDate },
+    headers: { Authorization: `Bearer ${token}`, 'x-api-key': API_KEY }
+  });
+};
+
 export const addMealPlan = async (plan) => {
   const token = await auth.currentUser?.getIdToken();
   return axios.post(`${API_BASE}/meal-plans`, plan, {

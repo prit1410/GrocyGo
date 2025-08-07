@@ -35,12 +35,17 @@ class RecipesApi {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getSuggestedRecipes(String course, String diet) async {
+  Future<List<Map<String, dynamic>>> getSuggestedRecipes(
+      String course, String diet, List<String> ingredients) async {
     final token = await _getToken();
     final response = await http.post(
       Uri.parse('$baseUrl/ai/recipe-suggestions'),
       headers: headers(token: token),
-      body: json.encode({'course': course, 'diet': diet}),
+      body: json.encode({
+        'course': course,
+        'diet': diet,
+        'ingredients': ingredients,
+      }),
     );
 
     if (response.statusCode == 200) {

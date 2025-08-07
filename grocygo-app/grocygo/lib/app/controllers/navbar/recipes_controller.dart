@@ -1,7 +1,6 @@
-
 import 'package:get/get.dart';
-import '../../utils/api/recipes_api.dart';
-import '../../utils/api/inventory_api.dart';
+import 'package:grocygo/app/utils/api/inventory_api.dart';
+import 'package:grocygo/app/utils/api/recipes_api.dart';
 
 class RecipesController extends GetxController {
   final RecipesApi _recipesAPI = RecipesApi();
@@ -29,7 +28,7 @@ class RecipesController extends GetxController {
     'Indian Breakfast',
     'North Indian Breakfast',
     'One Pot Dish',
-    'Brunch'
+    'Brunch',
   ];
   final List<String> diets = [
     'All Diets',
@@ -42,7 +41,7 @@ class RecipesController extends GetxController {
     'Eggetarian',
     'Vegan',
     'Gluten Free',
-    'Sugar Free Diet'
+    'Sugar Free Diet',
   ];
 
   var greeting = ''.obs;
@@ -51,7 +50,6 @@ class RecipesController extends GetxController {
   void onInit() {
     updateGreeting();
     fetchSavedRecipes();
-    fetchSuggestedRecipes();
     fetchInventory(); // Fetch inventory on init
     super.onInit();
   }
@@ -81,9 +79,16 @@ class RecipesController extends GetxController {
   Future<void> fetchSuggestedRecipes() async {
     try {
       isLoadingSuggested(true);
-      final course = selectedCourse.value == 'All Courses' ? '' : selectedCourse.value;
+      final course =
+          selectedCourse.value == 'All Courses' ? '' : selectedCourse.value;
       final diet = selectedDiet.value == 'All Diets' ? '' : selectedDiet.value;
-      suggestedRecipes.value = await _recipesAPI.getSuggestedRecipes(course, diet);
+      final ingredients =
+          inventoryItems.map((item) => item['name'] as String).toList();
+      suggestedRecipes.value = await _recipesAPI.getSuggestedRecipes(
+        course,
+        diet,
+        ingredients,
+      );
     } catch (e) {
       Get.snackbar('Error', e.toString());
     } finally {
