@@ -329,7 +329,10 @@ function RecipesPage({ forceOpenDialog }) {
                           </a>
                         ) : recipe.name}
                       </Typography>
-                      <IconButton onClick={() => handleDelete(recipe.id)} size="small">
+                      <IconButton onClick={() => {
+                        console.log('Attempting to delete recipe with ID:', recipe.id);
+                        handleDelete(recipe.id);
+                      }} size="small">
                         <DeleteIcon sx={{ color: theme.colors.text }} />
                       </IconButton>
                     </Box>
