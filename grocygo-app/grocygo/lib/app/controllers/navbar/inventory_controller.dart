@@ -1,4 +1,3 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:grocygo/app/components/dropdown_field.dart';
@@ -13,20 +12,34 @@ class InventoryController extends GetxController {
   final searchController = TextEditingController();
 
   // Observable list of filtered items
-  final filteredItems = <InventoryItem>[].obs;
+  final filteredItems = <Map<String, dynamic>>[].obs;
+  final InventoryApi _api = InventoryApi();
+
+  @override
+  void onInit() {
+    refresh();
+    super.onInit();
+  }
 
   // Load inventory from backend
   Future<void> refresh() async {
     loading.value = true;
     try {
-      // Get Firebase Auth token
-      final user = await FirebaseAuth.instance.currentUser;
-      final token = await user?.getIdToken();
-      print('[InventoryController] Using token: $token');
-      final items = await InventoryApi.fetchInventory(token: token);
-      print('[InventoryController] Raw items from API:');
-      print(items);
-      filteredItems.assignAll(items);
+      final items = await _api.fetchInventory();
+      final processedItems = items.map((item) {
+        // Ensure all keys are strings and handle potential null IDs
+        final Map<String, dynamic> typedItem = {};
+        item.forEach((key, value) {
+          typedItem[key.toString()] = value;
+        });
+
+        if (typedItem['id'] == null) {
+          print('WARNING: Item fetched with null ID: $typedItem');
+          typedItem['id'] = 'temp_${DateTime.now().microsecondsSinceEpoch}';
+        }
+        return typedItem;
+      }).toList();
+      filteredItems.assignAll(processedItems);
     } catch (e) {
       print('[InventoryController] Error loading inventory: $e');
       Get.snackbar('Error', 'Failed to load inventory');
@@ -120,18 +133,26 @@ class InventoryController extends GetxController {
                 return;
               }
               try {
-                final newItem = InventoryItem(
-                  name: name,
-                  unit: unit!,
-                  quantity: int.tryParse(quantity) ?? 1,
-                  location: location,
-                  expiryDate: expiryDate,
-                  category: category,
-                );
-                final user = await FirebaseAuth.instance.currentUser;
-                final token = await user?.getIdToken();
-                final added = await InventoryApi.addItem(newItem, token: token);
-                filteredItems.add(added);
+                final newItem = {
+                  'name': name,
+                  'unit': unit!,
+                  'quantity': int.tryParse(quantity) ?? 1,
+                  'location': location,
+                  'expiryDate': expiryDate?.toIso8601String(),
+                  'category': category,
+                };
+                final added = await _api.addItem(newItem);
+                // Ensure the added item has a non-null ID
+                final Map<String, dynamic> processedAdded = {};
+                added.forEach((key, value) {
+                  processedAdded[key.toString()] = value;
+                });
+                if (processedAdded['id'] == null) {
+                  print('WARNING: Added item has null ID: $processedAdded');
+                  processedAdded['id'] = 'temp_${DateTime.now().microsecondsSinceEpoch}';
+                }
+                print('DEBUG: Added item ID from API: ${processedAdded['id']}');
+                filteredItems.add(processedAdded);
                 Get.back();
                 Get.snackbar('Success', 'Item added');
               } catch (e) {
@@ -147,13 +168,19 @@ class InventoryController extends GetxController {
   }
 
   // Edit item in backend
-  void openEditDialog(InventoryItem item) {
-    String name = item.name;
-    String quantity = item.quantity.toString();
-    String? unit = item.unit;
-    String? location = item.location;
-    String? category = item.category;
-    DateTime? expiryDate = item.expiryDate;
+  void openEditDialog(Map<String, dynamic> item) {
+    final name = item['name'].toString().obs;
+    final quantity = item['quantity'].toString().obs;
+    final unit = (item['unit'] as String?).obs;
+    final location = (item['location'] as String?).obs;
+    final category = (item['category'] as String?).obs;
+    final expiryDate = (item['expiryDate'] is String
+            ? DateTime.tryParse(item['expiryDate'])
+            : (item['expiryDate'] is Map && item['expiryDate']['_seconds'] != null
+                ? DateTime.fromMillisecondsSinceEpoch(
+                    item['expiryDate']['_seconds'] * 1000)
+                : null))
+        .obs;
 
     final units = [
       'pieces',
@@ -177,86 +204,101 @@ class InventoryController extends GetxController {
 
     Get.dialog(
       AlertDialog(
-        title: Text('Edit Item'),
+        title: const Text('Edit Item'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                decoration: InputDecoration(labelText: 'Name'),
-                controller: TextEditingController(text: name),
-                onChanged: (v) => name = v,
+                decoration: const InputDecoration(labelText: 'Name'),
+                controller: TextEditingController(text: name.value),
+                onChanged: (v) => name.value = v,
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               TextField(
-                decoration: InputDecoration(labelText: 'Quantity'),
+                decoration: const InputDecoration(labelText: 'Quantity'),
                 keyboardType: TextInputType.number,
-                controller: TextEditingController(text: quantity),
-                onChanged: (v) => quantity = v,
+                controller: TextEditingController(text: quantity.value),
+                onChanged: (v) => quantity.value = v,
               ),
-              SizedBox(height: 12),
-              DropdownField(
-                label: 'Unit',
-                items: units,
-                value: unit,
-                onChanged: (v) => unit = v,
+              const SizedBox(height: 12),
+              Obx(
+                () => DropdownField(
+                  label: 'Unit',
+                  items: units,
+                  value: unit.value,
+                  onChanged: (v) => unit.value = v,
+                ),
               ),
-              SizedBox(height: 12),
-              DropdownField(
-                label: 'Location',
-                items: locations,
-                value: location,
-                onChanged: (v) => location = v,
+              const SizedBox(height: 12),
+              Obx(
+                () => DropdownField(
+                  label: 'Location',
+                  items: locations,
+                  value: location.value,
+                  onChanged: (v) => location.value = v,
+                ),
               ),
-              SizedBox(height: 12),
-              DropdownField(
-                label: 'Category',
-                items: categories,
-                value: category,
-                onChanged: (v) => category = v,
+              const SizedBox(height: 12),
+              Obx(
+                () => DropdownField(
+                  label: 'Category',
+                  items: categories,
+                  value: category.value,
+                  onChanged: (v) => category.value = v,
+                ),
               ),
-              SizedBox(height: 12),
-              DatePickerField(
-                label: 'Expiry Date',
-                value: expiryDate,
-                onChanged: (v) => expiryDate = v,
+              const SizedBox(height: 12),
+              Obx(
+                () => DatePickerField(
+                  label: 'Expiry Date',
+                  value: expiryDate.value,
+                  onChanged: (v) => expiryDate.value = v,
+                ),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: Text('Cancel')),
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
-              if (name.isEmpty || quantity.isEmpty || unit == null) {
+              if (name.value.isEmpty ||
+                  quantity.value.isEmpty ||
+                  unit.value == null) {
                 Get.snackbar('Error', 'Please fill all required fields');
                 return;
               }
               try {
-                final updated = InventoryItem(
-                  id: item.id,
-                  name: name,
-                  unit: unit!,
-                  quantity: int.tryParse(quantity) ?? 1,
-                  location: location,
-                  expiryDate: expiryDate,
-                  category: category,
+                final updated = {
+                  'id': item['id'],
+                  'name': name.value,
+                  'unit': unit.value!,
+                  'quantity': int.tryParse(quantity.value) ?? 1,
+                  'location': location.value,
+                  'expiryDate': expiryDate.value?.toIso8601String(),
+                  'category': category.value,
+                };
+                final String? itemId = item['id'] as String?;
+                if (itemId == null) {
+                  Get.snackbar('Error', 'Cannot update item: ID is missing.');
+                  return;
+                }
+                print('DEBUG: Item ID being sent for update: $itemId');
+                print('DEBUG: Updated payload being sent: $updated');
+                final result = await _api.updateItem(itemId, updated);
+                final idx = filteredItems.indexWhere(
+                  (i) => i['id'] == itemId,
                 );
-                final user = await FirebaseAuth.instance.currentUser;
-                final token = await user?.getIdToken();
-                final result = await InventoryApi.updateItem(
-                  updated,
-                  token: token,
-                );
-                final idx = filteredItems.indexWhere((i) => i.id == item.id);
                 if (idx != -1) filteredItems[idx] = result;
                 Get.back();
                 Get.snackbar('Success', 'Item updated');
               } catch (e) {
+                print('Failed to update item: $e');
                 Get.snackbar('Error', 'Failed to update item');
               }
             },
-            child: Text('Save'),
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -267,10 +309,13 @@ class InventoryController extends GetxController {
   // Delete item from backend
   Future<void> deleteItem(dynamic id) async {
     try {
-      final user = await FirebaseAuth.instance.currentUser;
-      final token = await user?.getIdToken();
-      await InventoryApi.deleteItem(id, token: token);
-      filteredItems.removeWhere((item) => item.id == id);
+      final String? itemId = id as String?;
+      if (itemId == null) {
+        Get.snackbar('Error', 'Cannot delete item: ID is missing.');
+        return;
+      }
+      await _api.deleteItem(itemId);
+      filteredItems.removeWhere((item) => item['id'] == itemId);
       Get.snackbar('Delete', 'Item deleted');
     } catch (e) {
       Get.snackbar('Error', 'Failed to delete item');
@@ -279,8 +324,17 @@ class InventoryController extends GetxController {
 
   // Dummy search handler
   void onSearch(String value) {
-    // Implement search logic here
-    // For now, do nothing
+    if (value.isEmpty) {
+      refresh();
+      return;
+    }
+    final lowerCaseQuery = value.toLowerCase();
+    filteredItems.value =
+        filteredItems
+            .where(
+              (item) => item['name'].toLowerCase().contains(lowerCaseQuery),
+            )
+            .toList();
   }
 
   // Dummy expiry status method
@@ -290,60 +344,5 @@ class InventoryController extends GetxController {
     if (expiryDate.isBefore(now)) return 'Expired';
     final days = expiryDate.difference(now).inDays;
     return days < 7 ? 'Expiring soon' : 'Fresh';
-  }
-}
-
-// Dummy InventoryItem model for demonstration
-class InventoryItem {
-  final dynamic id;
-  final String name;
-  final String unit;
-  final int quantity;
-  final String? location;
-  final DateTime? expiryDate;
-  final String? category;
-
-  InventoryItem({
-    this.id,
-    required this.name,
-    required this.unit,
-    required this.quantity,
-    this.location,
-    this.expiryDate,
-    this.category,
-  });
-
-  factory InventoryItem.fromJson(Map<String, dynamic> json) {
-    // Firestore may return id as 'id' or 'docId', and expiryDate as string or Timestamp
-    dynamic expiryRaw = json['expiryDate'];
-    DateTime? expiryDate;
-    if (expiryRaw is String) {
-      expiryDate = DateTime.tryParse(expiryRaw);
-    } else if (expiryRaw is Map && expiryRaw['_seconds'] != null) {
-      expiryDate = DateTime.fromMillisecondsSinceEpoch(
-        expiryRaw['_seconds'] * 1000,
-      );
-    }
-    return InventoryItem(
-      id: json['id'] ?? json['docId'],
-      name: json['name'] ?? '',
-      unit: json['unit'] ?? '',
-      quantity: int.tryParse(json['quantity']?.toString() ?? '1') ?? 1,
-      location: json['location'],
-      expiryDate: expiryDate,
-      category: json['category'],
-    );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'unit': unit,
-      'quantity': quantity,
-      'location': location,
-      'expiryDate': expiryDate?.toIso8601String(),
-      'category': category,
-    };
   }
 }

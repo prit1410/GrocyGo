@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../controllers/navbar/inventory_controller.dart';
 
 class InventoryListView extends StatelessWidget {
-  final List<InventoryItem> items;
-  final void Function(InventoryItem) onEdit;
+  final List<Map<String, dynamic>> items;
+  final void Function(Map<String, dynamic>) onEdit;
   final void Function(dynamic) onDelete;
   final String Function(DateTime?) getExpiryStatus;
 
@@ -25,13 +24,21 @@ class InventoryListView extends StatelessWidget {
           (_, __) => Divider(height: 1, color: theme.dividerColor),
       itemBuilder: (context, index) {
         final item = items[index];
+        DateTime? expiryDate;
+        if (item['expiryDate'] is String) {
+          expiryDate = DateTime.tryParse(item['expiryDate']);
+        } else if (item['expiryDate'] is Map && item['expiryDate']['_seconds'] != null) {
+          expiryDate = DateTime.fromMillisecondsSinceEpoch(
+              item['expiryDate']['_seconds'] * 1000);
+        }
+
         return ListTile(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 12,
             vertical: 8,
           ),
           title: Text(
-            item.name,
+            item['name'],
             style: theme.textTheme.bodyLarge?.copyWith(
               fontWeight: FontWeight.w600,
             ),
@@ -39,7 +46,7 @@ class InventoryListView extends StatelessWidget {
           leading: CircleAvatar(
             backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
             child: Text(
-              item.name[0].toUpperCase(),
+              item['name'][0].toUpperCase(),
               style: theme.textTheme.titleMedium,
             ),
           ),
@@ -56,7 +63,7 @@ class InventoryListView extends StatelessWidget {
                       Icon(Icons.location_on, size: 16, color: theme.hintColor),
                       const SizedBox(width: 4),
                       Text(
-                        item.location ?? '-',
+                        item['location'] ?? '-',
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
@@ -72,7 +79,7 @@ class InventoryListView extends StatelessWidget {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        getExpiryStatus(item.expiryDate),
+                        getExpiryStatus(expiryDate),
                         style: theme.textTheme.bodySmall,
                       ),
                     ],
@@ -84,7 +91,7 @@ class InventoryListView extends StatelessWidget {
                 icon: Icon(Icons.more_vert, color: theme.iconTheme.color),
                 onSelected: (value) {
                   if (value == 'edit') onEdit(item);
-                  if (value == 'delete') onDelete(item.id);
+                  if (value == 'delete') onDelete(item['id']);
                 },
                 itemBuilder:
                     (context) => [
@@ -106,7 +113,7 @@ class InventoryListView extends StatelessWidget {
           isThreeLine: true,
           dense: false,
           subtitle: Text(
-            '${item.quantity} ${item.unit}',
+            '${item['quantity']} ${item['unit']}',
             style: theme.textTheme.bodyMedium,
           ),
         );
@@ -114,3 +121,4 @@ class InventoryListView extends StatelessWidget {
     );
   }
 }
+

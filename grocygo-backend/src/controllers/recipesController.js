@@ -6,7 +6,11 @@ exports.getAll = async (req, res) => {
   try {
     const userId = req.user.uid;
     const snapshot = await db.collection('user').doc(userId).collection('recipes').get();
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      delete data.id; // Ensure 'id' from doc.data() doesn't overwrite doc.id
+      return { id: doc.id, ...data };
+    });
     res.json(items);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -18,6 +22,7 @@ exports.add = async (req, res) => {
     const userId = req.user.uid;
     // Accept all fields from AI recipe (image, instructions, prep_time, etc.)
     const data = { ...req.body, userId, createdAt: new Date() };
+    delete data.id; // Ensure no 'id' is passed in the body when adding
     // Ensure all fields are present (fallbacks)
     if (!data.course) data.course = '';
     if (!data.diet) data.diet = '';
@@ -39,7 +44,9 @@ exports.update = async (req, res) => {
     const userId = req.user.uid;
     const id = req.params.id;
     const docRef = db.collection('user').doc(userId).collection('recipes').doc(id);
-    await docRef.update(req.body);
+    const updateData = { ...req.body };
+    delete updateData.id; // Ensure 'id' is not updated from the request body
+    await docRef.update(updateData);
     const doc = await docRef.get();
     if (!doc.exists) return res.status(404).json({ error: 'Not found' });
     res.json({ id: doc.id, ...doc.data() });

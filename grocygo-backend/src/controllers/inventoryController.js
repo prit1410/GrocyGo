@@ -6,7 +6,12 @@ exports.getAll = async (req, res) => {
     const userId = req.user?.uid; // <-- error here if req.user is undefined
     if (!userId) throw new Error('User not authenticated');
     const snapshot = await db.collection('user').doc(userId).collection('inventory').get();
-    const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const items = snapshot.docs.map(doc => {
+      const data = doc.data();
+      // Ensure the ID always comes from doc.id, not from the document data itself
+      delete data.id; // Remove any 'id' field from the document data
+      return { id: doc.id, ...data };
+    });
     res.json(items);
   } catch (err) {
     console.error('getAll inventory error:', err);
@@ -19,6 +24,7 @@ exports.add = async (req, res) => {
     const userId = req.user.uid;
     if (!userId) throw new Error('User not authenticated');
     const data = { ...req.body, userId, createdAt: new Date() };
+    delete data.id; // Ensure no 'id' is passed in the body when adding
     const docRef = await db.collection('user').doc(userId).collection('inventory').add(data);
     const doc = await docRef.get();
     res.status(201).json({ id: doc.id, ...doc.data() });
