@@ -65,7 +65,10 @@ class RecipesScreen extends StatelessWidget {
                 if (controller.savedRecipes.isEmpty) {
                   return const Center(child: Text('No saved recipes yet.'));
                 }
-                return RecipesListView(recipes: controller.savedRecipes);
+                return Obx(() => RecipesListView(
+                      recipes: controller.savedRecipes,
+                      inventoryItems: controller.inventoryItems,
+                    ));
               }),
               const SizedBox(height: 24),
 
@@ -158,10 +161,11 @@ class RecipesScreen extends StatelessWidget {
                 if (controller.suggestedRecipes.isEmpty) {
                   return const Center(child: Text('No suggestions available.'));
                 }
-                return RecipesListView(
-                  recipes: controller.suggestedRecipes,
-                  isSuggestedList: true,
-                );
+                return Obx(() => RecipesListView(
+                      recipes: controller.suggestedRecipes,
+                      isSuggestedList: true,
+                      inventoryItems: controller.inventoryItems,
+                    ));
               }),
             ],
           ),

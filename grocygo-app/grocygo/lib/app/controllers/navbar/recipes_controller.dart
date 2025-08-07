@@ -1,9 +1,11 @@
 
 import 'package:get/get.dart';
 import '../../utils/api/recipes_api.dart';
+import '../../utils/api/inventory_api.dart';
 
 class RecipesController extends GetxController {
   final RecipesApi _recipesAPI = RecipesApi();
+  final InventoryApi _inventoryAPI = InventoryApi();
 
   var savedRecipes = [].obs;
   var suggestedRecipes = [].obs;
@@ -11,6 +13,7 @@ class RecipesController extends GetxController {
   var isLoadingSuggested = false.obs;
   var selectedCourse = 'All Courses'.obs;
   var selectedDiet = 'All Diets'.obs;
+  var inventoryItems = <Map<String, dynamic>>[].obs;
 
   final List<String> courses = [
     'All Courses',
@@ -46,6 +49,7 @@ class RecipesController extends GetxController {
   void onInit() {
     fetchSavedRecipes();
     fetchSuggestedRecipes();
+    fetchInventory(); // Fetch inventory on init
     super.onInit();
   }
 
@@ -81,6 +85,15 @@ class RecipesController extends GetxController {
       Get.snackbar('Error', e.toString());
     } finally {
       isLoadingSuggested(false);
+    }
+  }
+
+  Future<void> fetchInventory() async {
+    try {
+      final items = await _inventoryAPI.fetchInventory();
+      inventoryItems.assignAll(items.cast<Map<String, dynamic>>());
+    } catch (e) {
+      print('[RecipesController] Error loading inventory: $e');
     }
   }
 
