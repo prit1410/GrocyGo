@@ -48,7 +48,8 @@ class _AddMealDialogState extends State<AddMealDialog> {
             child: AbsorbPointer(
               child: TextFormField(
                 controller: TextEditingController(
-                  text: "${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}",
+                  text:
+                      "${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}",
                 ),
                 decoration: const InputDecoration(
                   labelText: 'Select Date',
@@ -68,24 +69,43 @@ class _AddMealDialogState extends State<AddMealDialog> {
                 });
               }
             },
-            items: <String>['My Recipes', 'AI Generated', 'Add Custom']
-                .map<DropdownMenuItem<String>>((String value) {
-              return DropdownMenuItem<String>(
-                value: value,
-                child: Text(value),
-              );
-            }).toList(),
+            items:
+                <String>[
+                  'My Recipes',
+                  'AI Generated',
+                  'Add Custom',
+                ].map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
           ),
           const SizedBox(height: 20),
           if (selectedOption != 'Add Custom')
             Obx(() {
-              final recipes = selectedOption == 'My Recipes'
-                  ? controller.mealPlans.values.expand((e) => e.values).whereType<Map<String, dynamic>>().map((e) => e['recipe']).whereType<Map<String, dynamic>>().toList()
-                  : controller.mealSuggestions;
+              final recipes =
+                  selectedOption == 'My Recipes'
+                      ? controller.mealPlans.values
+                          .expand((e) => e.values)
+                          .whereType<Map<String, dynamic>>()
+                          .map((e) => e['recipe'])
+                          .whereType<Map<String, dynamic>>()
+                          .toList()
+                      : controller.mealSuggestions;
+              print('Recipes list: $recipes'); // Debug print
               return DropdownField(
                 value: selectedRecipe,
                 hintText: 'Select a recipe',
-                items: recipes.map((r) => r['recipe_title'] as String).toList(),
+                items: (recipes as List<dynamic>)
+                    .map((r) {
+                      final title = r['recipe_title'] ?? r['name'];
+                      return title is String ? title : null;
+                    })
+                    .where((t) => t != null && t.isNotEmpty)
+                    .toSet()
+                    .toList()
+                    .cast<String>(),
                 onChanged: (value) {
                   setState(() {
                     selectedRecipe = value;
@@ -105,21 +125,35 @@ class _AddMealDialogState extends State<AddMealDialog> {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () => Get.back(),
-          child: const Text('Cancel'),
-        ),
+        TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
         ElevatedButton(
           onPressed: () {
             if (selectedRecipe != null) {
-              final plan = {
-                'date': _selectedDate.toIso8601String(),
-                'category': widget.category,
-                'recipe': {
-                  'recipe_title': selectedRecipe,
-                }
-              };
-              controller.addMealPlan(plan);
+              final recipes = selectedOption == 'My Recipes'
+                  ? controller.mealPlans.values.expand((e) => e.values).whereType<Map<String, dynamic>>().map((e) => e['recipe']).whereType<Map<String, dynamic>>().toList()
+                  : controller.mealSuggestions;
+
+              final recipeData = (recipes as List<dynamic>).firstWhere(
+                (r) => r['recipe_title'] == selectedRecipe,
+                orElse: () => null,
+              );
+
+              if (recipeData != null) {
+                final plan = {
+                  'date': _selectedDate.toIso8601String(),
+                  'category': widget.category,
+                  'recipe': recipeData,
+                };
+                controller.addMealPlan(plan);
+              } else {
+                // Handle custom meal
+                final plan = {
+                  'date': _selectedDate.toIso8601String(),
+                  'category': widget.category,
+                  'recipe': {'recipe_title': selectedRecipe, 'id': 'custom'},
+                };
+                controller.addMealPlan(plan);
+              }
               Get.back();
             }
           },

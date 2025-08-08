@@ -25,7 +25,7 @@ class MealPlanSection extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               if (items != null && items!.isNotEmpty)
-                ...items!.map((item) => Text(item['recipe_title'] ?? 'Unnamed Recipe')).toList()
+                ...items!.map((item) => Text(item['name'] ?? 'Unnamed Meal')).toList()
               else
                 ElevatedButton.icon(
                   onPressed: onAdd,

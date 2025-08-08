@@ -21,7 +21,7 @@ class RecipesListView extends StatelessWidget {
     final RecipesController controller = Get.find();
 
     return SizedBox(
-      height: 359,
+      height: 400,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: recipes.length,
@@ -67,9 +67,8 @@ class RecipesListView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(
-                    width: 150, // Fixed width for square image
-                    height: 150, // Fixed height for square image
+                  AspectRatio(
+                    aspectRatio: 1.0, // 1:1 aspect ratio for square
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child:

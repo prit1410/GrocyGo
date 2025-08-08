@@ -156,6 +156,7 @@ function RecipesPage({ forceOpenDialog }) {
               fromInventory: false,
             }))
           : [],
+        recipe: recipe, // Add the full recipe object
       };
       await addRecipe(payload);
       alert('Recipe saved to your recipes!');

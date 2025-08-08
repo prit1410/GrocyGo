@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:grocygo/app/components/add_meal_dialog.dart';
+import 'package:grocygo/app/components/date_picker_field.dart'; // Import the DatePickerField
 import 'package:grocygo/app/components/dropdown_field.dart';
 import 'package:grocygo/app/components/meal_plan_section.dart';
+import 'package:grocygo/app/components/recipes_list_view.dart';
 import 'package:grocygo/app/controllers/navbar/mealplans_controller.dart';
+import 'package:grocygo/app/controllers/navbar/recipes_controller.dart';
+import 'package:intl/intl.dart';
 
 class MealPlansScreen extends GetView<MealPlansController> {
   const MealPlansScreen({super.key});
@@ -22,7 +26,6 @@ class MealPlansScreen extends GetView<MealPlansController> {
     if (!Get.isRegistered<MealPlansController>()) {
       Get.put(MealPlansController());
     }
-    // Now you can safely access the controller via `controller` property of GetView
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -35,54 +38,20 @@ class MealPlansScreen extends GetView<MealPlansController> {
             ),
             const Text('Plan your meals based on available ingredients'),
             const SizedBox(height: 20),
+            // Date Picker Field
             Obx(
-              () => Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios),
-                    onPressed: controller.goToPreviousWeek,
-                  ),
-                  Text(
-                    controller.getWeekRange(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.arrow_forward_ios),
-                    onPressed: controller.goToNextWeek,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
-            Obx(
-              () => Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios),
-                    onPressed: controller.goToPreviousWeek,
-                  ),
-                  Text(
-                    controller.getWeekRange(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.arrow_forward_ios),
-                    onPressed: controller.goToNextWeek,
-                  ),
-                ],
+              () => DatePickerField(
+                label: 'Select Date',
+                value: controller.selectedDate.value,
+                onChanged: (newDate) {
+                  controller.selectedDate.value = newDate!;
+                  controller.fetchMealPlans(); // Fetch plans for the new date
+                },
               ),
             ),
             const SizedBox(height: 20),
             const Text(
-              'Weekly Meal Plan',
+              'Daily Meal Plan',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
@@ -90,50 +59,26 @@ class MealPlansScreen extends GetView<MealPlansController> {
               if (controller.isLoadingPlans.value) {
                 return const Center(child: CircularProgressIndicator());
               }
+              final selectedDateString = DateFormat(
+                'yyyy-MM-dd',
+              ).format(controller.selectedDate.value);
+              final mealPlansForSelectedDay =
+                  controller.mealPlans[selectedDateString] ?? {};
+
               return Column(
                 children:
-                    controller.daysOfWeek.map((dayName) {
-                      final dayDate = controller.currentWeekStart.value.add(
-                        Duration(days: controller.daysOfWeek.indexOf(dayName)),
-                      );
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 8.0,
-                            ),
-                            child: Text(
-                              '$dayName - ${dayDate.day}/${dayDate.month}',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          ...controller.mealSlots.map((slot) {
-                            final mealPlan =
-                                controller.mealPlans[dayName]?[slot];
-                            return MealPlanSection(
-                              title: slot,
-                              items:
-                                  mealPlan != null
-                                      ? [
-                                        mealPlan['recipe']
-                                            as Map<String, dynamic>,
-                                      ]
-                                      : [],
-                              onAdd:
-                                  () => _showAddMealDialog(
-                                    context,
-                                    slot,
-                                    dayDate,
-                                  ),
-                            );
-                          }).toList(),
-                          const SizedBox(height: 10),
-                        ],
+                    controller.mealSlots.map((slot) {
+                      final mealPlan = mealPlansForSelectedDay[slot];
+                      return MealPlanSection(
+                        title: slot,
+                        items: mealPlan != null
+                            ? [mealPlan['recipe'] ?? {'name': mealPlan['name']}] // Handle both structures
+                            : [],
+                        onAdd: () => _showAddMealDialog(
+                          context,
+                          slot,
+                          controller.selectedDate.value,
+                        ),
                       );
                     }).toList(),
               );
@@ -167,6 +112,23 @@ class MealPlansScreen extends GetView<MealPlansController> {
                 ),
               ),
             ),
+            Obx(() {
+              if (controller.isLoadingSuggestions.value) {
+                return const Center(child: CircularProgressIndicator());
+              } else if (controller.mealSuggestions.isEmpty) {
+                return const Center(child: Text('No suggestions available.'));
+              } else {
+                return SizedBox(
+                  height: 400, // Set a fixed height for the ListView
+                  child: RecipesListView(
+                    recipes: controller.mealSuggestions,
+                    isSuggestedList: true,
+                    inventoryItems: Get.find<RecipesController>().inventoryItems,
+                    controller: Get.find<RecipesController>(),
+                  ),
+                );
+              }
+            }),
           ],
         ),
       ),
