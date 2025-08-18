@@ -25,7 +25,7 @@ class _DatePickerFieldState extends State<DatePickerField> {
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.value ?? DateTime.now();
+    _selectedDate = widget.value ?? DateTime.now().toUtc();
     _focusedDate = _selectedDate;
     _generateWeekDays();
   }

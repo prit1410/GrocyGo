@@ -25,7 +25,9 @@ exports.getWeeklyMealPlans = async (req, res) => {
     }
 
     const startDateTime = new Date(startDate);
+    startDateTime.setHours(0, 0, 0, 0); // Set to the beginning of the day
     const endDateTime = new Date(endDate);
+    endDateTime.setHours(23, 59, 59, 999); // Set to the end of the day
 
     if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
       return res.status(400).json({ error: 'Invalid date format for startDate or endDate.' });
@@ -55,6 +57,7 @@ exports.add = async (req, res) => {
     if (!userId) throw new Error('User not authenticated');
     // Ensure date is a Firestore Timestamp if provided, otherwise use current date
     const date = req.body.date ? new Date(req.body.date) : new Date();
+    date.setHours(0, 0, 0, 0); // Normalize date to the start of the day
     const data = { ...req.body, userId, createdAt: new Date(), date };
     const docRef = await db.collection('user').doc(userId).collection('mealPlans').add(data);
     const doc = await docRef.get();

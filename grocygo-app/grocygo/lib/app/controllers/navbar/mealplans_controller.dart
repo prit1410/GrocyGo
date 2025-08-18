@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import 'package:grocygo/app/components/complete_meal_dialog.dart';
+import 'package:grocygo/app/components/ingredient_usage_dialog.dart';
 import 'package:grocygo/app/utils/api/mealplans_api.dart';
 import 'package:grocygo/app/utils/api/inventory_api.dart';
 import 'package:intl/intl.dart'; // Import for DateFormat
@@ -43,13 +45,12 @@ class MealPlansController extends GetxController {
   }
 
   void _initializeCurrentWeek() {
-    final today = DateTime.now();
+    final now = DateTime.now().toUtc();
+    final today = DateTime.utc(now.year, now.month, now.day);
     final dayOfWeek = today.weekday; // 1 for Monday, 7 for Sunday
     final diff =
-        today.day -
-        dayOfWeek +
-        (dayOfWeek == 7 ? -6 : 1); // Adjust to Monday of the current week
-    currentWeekStart.value = DateTime(today.year, today.month, diff);
+        today.day - dayOfWeek + 1; // Adjust to Monday of the current week
+    currentWeekStart.value = DateTime.utc(today.year, today.month, diff);
   }
 
   void goToPreviousWeek() {
@@ -82,7 +83,7 @@ class MealPlansController extends GetxController {
     try {
       isLoadingPlans.value = true;
       final start = currentWeekStart.value;
-      final end = start.add(const Duration(days: 6));
+      final end = start.add(const Duration(days: 7));
 
       final plansData = await _mealPlansApi.getWeeklyMealPlans(start, end);
 
@@ -136,13 +137,17 @@ class MealPlansController extends GetxController {
   Future<void> addMealPlan(Map<String, dynamic> mealData) async {
     try {
       final recipe = mealData['recipe'];
+      final date = DateTime.parse(mealData['date']);
       // Construct the meal plan payload to match the backend expectation
       final plan = {
-        'date': mealData['date'],
+        'date': DateFormat('yyyy-MM-dd').format(date),
         'mealType': mealData['category'],
-        'recipeId': recipe['id'] ?? recipe['recipeId'] ?? recipe['url'], // Prioritize id, then recipeId, then url
+        'recipeId':
+            recipe['id'] ??
+            recipe['recipeId'] ??
+            recipe['url'], // Prioritize id, then recipeId, then url
         'name': recipe['recipe_title'] ?? recipe['name'], // Check for both keys
-        'day': DateFormat('EEEE').format(DateTime.parse(mealData['date'])),
+        'day': DateFormat('EEEE').format(date),
         'recipe': recipe, // Add the full recipe object
       };
 
@@ -177,6 +182,52 @@ class MealPlansController extends GetxController {
       Get.snackbar('Success', 'Meal plan deleted successfully!');
     } catch (e) {
       Get.snackbar('Error', 'Failed to delete meal plan: $e');
+    }
+  }
+
+  void showCompleteMealDialog(Map<String, dynamic> mealPlan) {
+    Get.dialog(
+      CompleteMealDialog(
+        mealName: mealPlan['name'],
+        onConfirm: () {
+          Get.back();
+          showIngredientUsageDialog(mealPlan);
+        },
+      ),
+    );
+  }
+
+  void showIngredientUsageDialog(Map<String, dynamic> mealPlan) {
+    final recipe = mealPlan['recipe'];
+    if (recipe != null && recipe['ingredients'] != null) {
+      final ingredients =
+          (recipe['ingredients'] as String)
+              .split('|')
+              .map((e) => e.trim())
+              .toList();
+      Get.dialog(
+        IngredientUsageDialog(
+          ingredients: ingredients,
+          onConfirm: (usage) {
+            completeMeal(mealPlan['id'], usage);
+          },
+        ),
+      );
+    } else {
+      Get.snackbar('Error', 'No ingredients found for this meal.');
+    }
+  }
+
+  Future<void> completeMeal(
+    String planId,
+    List<Map<String, dynamic>> usage,
+  ) async {
+    try {
+      await _mealPlansApi.useIngredients(usage, planId);
+      fetchMealPlans();
+      Get.snackbar('Success', 'Meal completed and inventory updated.');
+    } catch (e) {
+      Get.snackbar('Error', 'Failed to complete meal: $e');
     }
   }
 }

@@ -6,6 +6,8 @@ import { auth } from './firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { useTheme } from './ThemeContext'; // <-- Add this line
 
+import CompleteMealDialog from './CompleteMealDialog';
+
 // Real API for AI meal plan suggestions
 async function getMealSuggestions(inventory = [], diet = '') {
   const token = await auth.currentUser?.getIdToken();
@@ -175,23 +177,41 @@ export default function MealPlansPage() {
   const handleSaveMeal = async (data) => {
     let name = '';
     let recipeId = null;
+    let recipePayload = null; // To hold the recipe object
+
     if (data.type === 'my') {
       const recipe = recipes.find(r => r.id === data.recipeId);
-      name = recipe ? recipe.name : '';
-      recipeId = recipe ? recipe.id : null;
+      if (recipe) {
+        name = recipe.name;
+        recipeId = recipe.id;
+        recipePayload = recipe;
+      }
     } else if (data.type === 'ai') {
-      // Find the selected AI suggestion by id (from AddMealDialog)
-      const ai = Array.isArray(suggestions)
+      const aiSuggestion = Array.isArray(suggestions)
         ? suggestions.find(r => (r.id || r.recipe_id) == data.recipeId)
         : null;
-      name = ai ? (ai.recipe_title || ai.name || '') : '';
+      if (aiSuggestion) {
+        name = aiSuggestion.recipe_title || aiSuggestion.name || '';
+        // AI suggestions might not have a stable 'id', so we pass the whole object
+        recipePayload = aiSuggestion;
+      }
     } else if (data.type === 'custom') {
       name = data.name;
     }
+
     if (!name) return;
-    // Add recipeId only if user selected from "my recipes"
-    const payload = { day: dialogDay, mealType: dialogMealType, name, date: dialogDate.toISOString() }; // Include date
-    if (recipeId) payload.recipeId = recipeId;
+
+    const payload = {
+      day: dialogDay,
+      mealType: dialogMealType,
+      name,
+      date: dialogDate.toISOString().split('T')[0],
+      recipe: recipePayload, // Add the recipe object to the payload
+    };
+    if (recipeId) {
+      payload.recipeId = recipeId;
+    }
+
     await addMealPlan(payload);
     setDialogOpen(false);
     fetchPlans();
@@ -205,24 +225,37 @@ export default function MealPlansPage() {
   };
 
   // Helper: check if meal is in the past (older than now)
-  function isMealPast(day, slot) {
-    // Simple: compare with today and slot time
+  function isMealPast(mealDate, slot) {
     const now = new Date();
-    const dayIdx = daysOfWeek.indexOf(day);
-    if (dayIdx === -1) return false;
-    const todayIdx = now.getDay() === 0 ? 6 : now.getDay() - 1; // JS: 0=Sun, our list: 0=Mon
-    if (dayIdx < todayIdx) return true;
-    if (dayIdx > todayIdx) return false;
-    // Same day: check slot time
-    let slotHour = slot === 'Breakfast' ? 10 : slot === 'Lunch' ? 15 : 22;
-    let slotMin = 0;
-    if (now.getHours() > slotHour || (now.getHours() === slotHour && now.getMinutes() >= slotMin)) return true;
+    const mealDateTime = new Date(mealDate);
+    mealDateTime.setHours(0, 0, 0, 0); // Start with date comparison
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // If the meal's date is before today, it's definitely in the past.
+    if (mealDateTime < today) {
+      return true;
+    }
+
+    // If the meal's date is today, check the time slot.
+    if (mealDateTime.getTime() === today.getTime()) {
+      const currentHour = now.getHours();
+      if (slot === 'Breakfast' && currentHour >= 10) return true; // 10 AM
+      if (slot === 'Lunch' && currentHour >= 15) return true; // 3 PM
+      if (slot === 'Dinner' && currentHour >= 22) return true; // 10 PM
+    }
+
     return false;
   }
 
   // Open "Did you make this meal?" dialog
   const handleCompleteMeal = (plan) => {
     setCompleteDialog({ open: true, plan });
+  };
+  
+  const handleCloseCompleteMealDialog = () => {
+    setCompleteDialog({ open: false, plan: null });
   };
 
   // After user says "Yes, I made it"
@@ -373,6 +406,18 @@ export default function MealPlansPage() {
           }
         }
       `}</style>
+      <CompleteMealDialog
+        open={completeDialog.open}
+        onClose={handleCloseCompleteMealDialog}
+        onConfirm={handleMadeMeal}
+        plan={completeDialog.plan}
+      />
+      <IngredientUsageDialog
+        open={ingredientDialog.open}
+        onClose={() => setIngredientDialog({ open: false, plan: null, ingredients: [] })}
+        ingredients={ingredientDialog.ingredients}
+        onConfirm={handleConfirmIngredients}
+      />
       <div className="mealplans-layout">
         {/* Weekly Meal Plan box (left/main) */}
         <div className="mealplans-main"
@@ -438,7 +483,7 @@ export default function MealPlansPage() {
                       <div style={{ display: 'flex', gap: 16 }}>
                         {mealSlots.map(slot => {
                           const plan = plans[day]?.[slot];
-                          const isPast = plan && isMealPast(day, slot);
+                          const isPast = plan && isMealPast(plan.date, slot);
                           const isCompleted = plan && completedMeals[plan.id];
                           return (
                             <div key={slot} style={{

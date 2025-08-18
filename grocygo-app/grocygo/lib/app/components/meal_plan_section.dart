@@ -4,8 +4,15 @@ class MealPlanSection extends StatelessWidget {
   final String title;
   final List<Map<String, dynamic>>? items;
   final VoidCallback? onAdd;
+  final Function(Map<String, dynamic>)? onComplete;
 
-  const MealPlanSection({super.key, required this.title, this.items, this.onAdd});
+  const MealPlanSection({
+    super.key,
+    required this.title,
+    this.items,
+    this.onAdd,
+    this.onComplete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +32,18 @@ class MealPlanSection extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               if (items != null && items!.isNotEmpty)
-                ...items!.map((item) => Text(item['name'] ?? 'Unnamed Meal')).toList()
+                ...items!.map(
+                  (item) => Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(item['name'] ?? 'Unnamed Meal'),
+                      ElevatedButton(
+                        onPressed: () => onComplete?.call(item),
+                        child: const Text('Completed?'),
+                      ),
+                    ],
+                  ),
+                )
               else
                 ElevatedButton.icon(
                   onPressed: onAdd,
