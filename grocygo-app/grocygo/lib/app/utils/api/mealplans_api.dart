@@ -113,4 +113,17 @@ class MealPlansApi {
       throw Exception('Failed to get meal suggestions');
     }
   }
+
+  Future<void> useIngredients(List<Map<String, dynamic>> ingredients, String planId) async {
+    final token = await _getToken();
+    final response = await http.post(
+      Uri.parse('$baseUrl/meal-plans/use-ingredients'),
+      headers: headers(token: token),
+      body: json.encode({'ingredients': ingredients, 'planId': planId}),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to use ingredients');
+    }
+  }
 }

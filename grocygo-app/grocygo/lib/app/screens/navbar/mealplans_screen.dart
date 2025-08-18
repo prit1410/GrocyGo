@@ -44,7 +44,7 @@ class MealPlansScreen extends GetView<MealPlansController> {
                 label: 'Select Date',
                 value: controller.selectedDate.value,
                 onChanged: (newDate) {
-                  controller.selectedDate.value = newDate!;
+                  controller.selectedDate.value = newDate!.toUtc();
                   controller.fetchMealPlans(); // Fetch plans for the new date
                 },
               ),
@@ -66,21 +66,23 @@ class MealPlansScreen extends GetView<MealPlansController> {
                   controller.mealPlans[selectedDateString] ?? {};
 
               return Column(
-                children:
-                    controller.mealSlots.map((slot) {
-                      final mealPlan = mealPlansForSelectedDay[slot];
-                      return MealPlanSection(
-                        title: slot,
-                        items: mealPlan != null
-                            ? [mealPlan['recipe'] ?? {'name': mealPlan['name']}] // Handle both structures
-                            : [],
-                        onAdd: () => _showAddMealDialog(
-                          context,
-                          slot,
-                          controller.selectedDate.value,
-                        ),
-                      );
-                    }).toList(),
+                children: controller.mealSlots.map((slot) {
+                  final mealPlan = mealPlansForSelectedDay[slot];
+                  return MealPlanSection(
+                    title: slot,
+                    items: mealPlan != null
+                        ? [mealPlan['recipe'] ?? {'name': mealPlan['name']}] // Handle both structures
+                        : [],
+                    onAdd: () => _showAddMealDialog(
+                      context,
+                      slot,
+                      controller.selectedDate.value,
+                    ),
+                    onComplete: (item) {
+                      controller.showCompleteMealDialog(mealPlan!);
+                    },
+                  );
+                }).toList(),
               );
             }),
             const SizedBox(height: 20),
