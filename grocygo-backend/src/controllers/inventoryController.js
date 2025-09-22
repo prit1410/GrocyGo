@@ -3,6 +3,7 @@ const { db } = require('../config/firebase');
 
 exports.getAll = async (req, res) => {
   try {
+    console.log('getAll inventory: req.user:', req.user);
     const userId = req.user?.uid; // <-- error here if req.user is undefined
     if (!userId) throw new Error('User not authenticated');
     const snapshot = await db.collection('user').doc(userId).collection('inventory').get();

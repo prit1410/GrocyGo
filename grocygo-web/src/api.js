@@ -2,13 +2,13 @@
 import axios from 'axios';
 import { auth } from './firebase';
 
-const API_BASE = process.env.REACT_APP_API_BASE || 'https://grocygo.onrender.com/api';
+const API_BASE = process.env.REACT_APP_API_BASE || 'https://grocygo.onrender.com//api';
 const API_KEY = process.env.REACT_APP_API_KEY;
 
 // AI Suggested Recipes API (returns matched/missing ingredients)
 export const getSuggestedRecipes = async (ingredients, course = '', diet = '') => {
   // ingredients: array of strings
-  const res = await axios.post('https://grocygo.onrender.com/api/ai/recipe-suggestions', { ingredients, course, diet }, {
+  const res = await axios.post('https://grocygo.onrender.com//api/ai/recipe-suggestions', { ingredients, course, diet }, {
     headers: { 'x-api-key': API_KEY }
   });
   // The Node.js backend returns an array directly, not { suggestions: [...] }

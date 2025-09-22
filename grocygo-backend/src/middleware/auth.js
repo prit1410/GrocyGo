@@ -1,15 +1,7 @@
 // Firebase Auth middleware for Express
 const { admin } = require('../config/firebase');
 
-// Combined API Key and Firebase Auth middleware for Express
 module.exports = async (req, res, next) => {
-  // API Key check
-  const apiKey = req.headers['x-api-key'];
-  if (!apiKey || apiKey !== process.env.API_KEY) {
-    console.error('[Auth Middleware] Invalid API Key:', apiKey);
-    return res.status(403).json({ error: 'Forbidden: Invalid API Key' });
-  }
-
   // Firebase Auth check
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
