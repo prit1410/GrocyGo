@@ -37,7 +37,7 @@ const analyticsRoutes = require('./routes/analytics');
 const aiRoutes = require('./routes/ai');
 
 
-// Security HTTP headers
+// Security headers
 app.use(helmet());
 
 // Rate limiting
