@@ -7,6 +7,8 @@ class AuthController extends GetxController {
 
   User? get user => _firebaseUser.value;
 
+  Rx<User?> get firebaseUser => _firebaseUser;
+
   @override
   void onInit() {
     super.onInit();

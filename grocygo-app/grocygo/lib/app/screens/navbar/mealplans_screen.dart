@@ -66,23 +66,29 @@ class MealPlansScreen extends GetView<MealPlansController> {
                   controller.mealPlans[selectedDateString] ?? {};
 
               return Column(
-                children: controller.mealSlots.map((slot) {
-                  final mealPlan = mealPlansForSelectedDay[slot];
-                  return MealPlanSection(
-                    title: slot,
-                    items: mealPlan != null
-                        ? [mealPlan['recipe'] ?? {'name': mealPlan['name']}] // Handle both structures
-                        : [],
-                    onAdd: () => _showAddMealDialog(
-                      context,
-                      slot,
-                      controller.selectedDate.value,
-                    ),
-                    onComplete: (item) {
-                      controller.showCompleteMealDialog(mealPlan!);
-                    },
-                  );
-                }).toList(),
+                children:
+                    controller.mealSlots.map((slot) {
+                      final mealPlan = mealPlansForSelectedDay[slot];
+                      return MealPlanSection(
+                        title: slot,
+                        items:
+                            mealPlan != null
+                                ? [
+                                  mealPlan['recipe'] ??
+                                      {'name': mealPlan['name']},
+                                ] // Handle both structures
+                                : [],
+                        onAdd:
+                            () => _showAddMealDialog(
+                              context,
+                              slot,
+                              controller.selectedDate.value,
+                            ),
+                        onComplete: (item) {
+                          controller.showCompleteMealDialog(mealPlan!);
+                        },
+                      );
+                    }).toList(),
               );
             }),
             const SizedBox(height: 20),
@@ -121,11 +127,12 @@ class MealPlansScreen extends GetView<MealPlansController> {
                 return const Center(child: Text('No suggestions available.'));
               } else {
                 return SizedBox(
-                  height: 400, // Set a fixed height for the ListView
+                  height: 409, // Set a fixed height for the ListView
                   child: RecipesListView(
                     recipes: controller.mealSuggestions,
                     isSuggestedList: true,
-                    inventoryItems: Get.find<RecipesController>().inventoryItems,
+                    inventoryItems:
+                        Get.find<RecipesController>().inventoryItems,
                     controller: Get.find<RecipesController>(),
                   ),
                 );

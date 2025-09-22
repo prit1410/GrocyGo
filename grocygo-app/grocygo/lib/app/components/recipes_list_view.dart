@@ -21,7 +21,7 @@ class RecipesListView extends StatelessWidget {
     final RecipesController controller = Get.find();
 
     return SizedBox(
-      height: 400,
+      height: 409,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: recipes.length,
