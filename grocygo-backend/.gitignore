@@ -31,4 +31,4 @@ dist-ssr
 .env.test.local
 .env.production.local
 
-src/config/serviceAccount.json
+grocygo-backend/src/config/serviceAccountKey.json
