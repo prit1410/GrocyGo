@@ -1,44 +1,54 @@
 // Firebase Admin SDK initialization for Node.js backend
-const admin = require('firebase-admin');
+const fs = require('fs');
 const path = require('path');
+const admin = require('firebase-admin');
 
+// Support multiple service account sources in order of preference:
+// 1) SERVICE_ACCOUNT_JSON env var (recommended for Render)
+// 2) Render secret file at /etc/secrets/serviceAccountKey.json
+// 3) Local file ./serviceAccountKey.json (developer convenience)
 let serviceAccount;
 
 try {
-  // 1) Render secret file path
-  if (process.env.RENDER) {
-    const serviceAccountPath = path.join('/etc', 'secrets', 'serviceAccountKey.json');
-    try {
-      serviceAccount = require(serviceAccountPath);
-      console.log('[Firebase] Loaded service account from Render secret file');
-    } catch (err) {
-      console.warn('[Firebase] Render secret file not found at', serviceAccountPath);
-    }
-  }
-
-  // 2) SERVICE_ACCOUNT_JSON environment variable (JSON string)
-  if (!serviceAccount && process.env.SERVICE_ACCOUNT_JSON) {
+  // 1) Try environment variable first (most secure / Render-friendly)
+  if (process.env.SERVICE_ACCOUNT_JSON) {
     try {
       serviceAccount = JSON.parse(process.env.SERVICE_ACCOUNT_JSON);
       console.log('[Firebase] Loaded service account from SERVICE_ACCOUNT_JSON env var');
     } catch (err) {
-      console.error('[Firebase] Failed to parse SERVICE_ACCOUNT_JSON:', err.message);
+      throw new Error('Failed to parse SERVICE_ACCOUNT_JSON: ' + err.message);
     }
   }
 
-  // 3) Local fallback for development: config/serviceAccountKey.json
+  // 2) If not provided via env, try Render's secret file path
   if (!serviceAccount) {
-    const localPath = path.join(__dirname, 'serviceAccountKey.json');
+    const renderPath = '/etc/secrets/serviceAccountKey.json';
     try {
-      serviceAccount = require(localPath);
-      console.log('[Firebase] Loaded local serviceAccountKey.json');
+      if (fs.existsSync(renderPath)) {
+        serviceAccount = require(renderPath);
+        console.log('[Firebase] Loaded service account from ' + renderPath);
+      }
     } catch (err) {
-      console.warn('[Firebase] No local serviceAccountKey.json found at', localPath);
+      // if require fails, we'll continue to the next option and surface a clear error later
+      console.warn('[Firebase] Could not load service account from ' + renderPath + ': ' + err.message);
+    }
+  }
+
+  // 3) Developer local fallback (optional)
+  if (!serviceAccount) {
+    const localPath = path.join(__dirname, '..', 'serviceAccountKey.json');
+    try {
+      if (fs.existsSync(localPath)) {
+        serviceAccount = require(localPath);
+        console.log('[Firebase] Loaded service account from local file ' + localPath);
+      }
+    } catch (err) {
+      console.warn('[Firebase] Could not load local service account file ' + localPath + ': ' + err.message);
     }
   }
 
   if (!serviceAccount) {
-    throw new Error('No Firebase service account available. Provide /etc/secrets/serviceAccountKey.json (Render), SERVICE_ACCOUNT_JSON env var, or config/serviceAccountKey.json');
+    throw new Error('No Firebase service account found. Set SERVICE_ACCOUNT_JSON (recommended) or install a secret file at /etc/secrets/serviceAccountKey.json');
   }
 
   admin.initializeApp({
@@ -52,6 +62,6 @@ try {
   module.exports = { admin, db, bucket };
 } catch (err) {
   console.error('[Firebase] Initialization error:', err.message);
-  // Re-throw so the server fails fast and logs the reason
+  // Fail fast so Render logs show the reason
   throw err;
 }
