@@ -11,9 +11,6 @@ if (process.env.RENDER) {
   // On Render, the secret file is at /etc/secrets/serviceAccountKey.json
   const serviceAccountPath = path.join('/etc', 'secrets', 'serviceAccountKey.json');
   serviceAccount = require(serviceAccountPath);
-} else {
-  // For local development, use the file from the config folder
-  serviceAccount = require('./serviceAccountKey.json');
 }
 
 admin.initializeApp({
