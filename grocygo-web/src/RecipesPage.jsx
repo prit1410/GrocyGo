@@ -5,7 +5,8 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } fro
 import { useEffect, useState, useRef } from 'react';
 import { Player } from '@lottiefiles/react-lottie-player';
 
-import { auth } from './firebase';import { useTheme } from './ThemeContext';
+import { auth } from './firebase';
+import { useTheme } from './ThemeContext';
 import { Card, CardContent, CardMedia, Typography, Grid, Box, Button, Link, TextField, IconButton } from '@mui/material';
 
 // Module-level cache for recipes and inventory
@@ -62,7 +63,7 @@ function RecipesPage({ forceOpenDialog }) {
   useEffect(() => {
     if (inventoryItems.length > 0) {
       setSuggestLoading(true);
-      const aiIngredients = inventoryItems.map(i => i.name || i);
+      const aiIngredients = inventoryItems.map(i => i?.name || i);
       // Create a cache key based on ingredients, course, and diet
       const cacheKey = JSON.stringify({ aiIngredients, aiCourse, aiDiet });
       if (aiSuggestCacheRef.current[cacheKey]) {
@@ -97,7 +98,7 @@ function RecipesPage({ forceOpenDialog }) {
   const fetchRecipes = async () => {
     try {
       const res = await getRecipes();
-      const arr = Array.isArray(res.data) ? res.data : [];
+      const arr = Array.isArray(res.data) ? res.data.filter(r => r) : [];
       setRecipes(arr);
       recipesCache = arr;
     } catch (e) {
@@ -108,7 +109,7 @@ function RecipesPage({ forceOpenDialog }) {
   const fetchInventory = async () => {
     try {
       const res = await getInventory();
-      const arr = Array.isArray(res.data) ? res.data : [];
+      const arr = Array.isArray(res.data) ? res.data.filter(i => i) : [];
       setInventoryItems(arr);
       inventoryCache = arr;
     } catch (e) {
@@ -150,11 +151,11 @@ function RecipesPage({ forceOpenDialog }) {
         instructions: recipe.instructions || '',
         items: recipe.ingredients
           ? recipe.ingredients.split('|').map(ing => ({
-              name: ing.trim(),
-              quantity: '',
-              unit: '',
-              fromInventory: false,
-            }))
+            name: ing.trim(),
+            quantity: '',
+            unit: '',
+            fromInventory: false,
+          }))
           : [],
         recipe: recipe, // Add the full recipe object
       };
@@ -168,6 +169,7 @@ function RecipesPage({ forceOpenDialog }) {
   // Bar chart data: recipes per cuisine
   const cuisineData = Object.values(
     recipes.reduce((acc, r) => {
+      if (!r) return acc;
       const cuisine = r.cuisine || 'Other';
       acc[cuisine] = acc[cuisine] || { cuisine, count: 0 };
       acc[cuisine].count += 1;
@@ -253,13 +255,14 @@ function RecipesPage({ forceOpenDialog }) {
           </Grid>
         ) : (
           Array.isArray(recipes) && recipes.map(recipe => {
+            if (!recipe) return null;
             // Parse ingredients string to array for all recipes
             let ingredientsArr = [];
             if (recipe.ingredients) {
               ingredientsArr = recipe.ingredients.split('|').map(x => x.trim().toLowerCase()).filter(Boolean);
             }
             let invNames = Array.isArray(inventoryItems)
-              ? inventoryItems.map(x => (x.name || '').toLowerCase())
+              ? inventoryItems.map(x => (x?.name || '').toLowerCase())
               : [];
             let matched = ingredientsArr.filter(ing => invNames.includes(ing));
             let missing = ingredientsArr.filter(ing => !invNames.includes(ing));
@@ -313,7 +316,7 @@ function RecipesPage({ forceOpenDialog }) {
                         width: '100%',
                         aspectRatio: '1',
                         display: 'flex',
-                            alignItems: 'center',
+                        alignItems: 'center',
                         justifyContent: 'center',
                         color: '#bbb',
                         fontSize: 32,
@@ -345,7 +348,7 @@ function RecipesPage({ forceOpenDialog }) {
                     {recipe.ingredients && (
                       <Box sx={{ mb: 1 }}>
                         <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center'}}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                           {ingredientsArr.map((ing, idx) => (
                             <Box key={idx} sx={{ fontSize: 13, bgcolor: theme.colors.hover, px: 1, borderRadius: 1, mr: 0.5 }}>
                               {ing}
@@ -394,6 +397,7 @@ function RecipesPage({ forceOpenDialog }) {
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={Object.values(
             recipes.reduce((acc, r) => {
+              if (!r) return acc;
               const cuisine = r.cuisine || 'Other';
               acc[cuisine] = acc[cuisine] || { cuisine, count: 0 };
               acc[cuisine].count += 1;
@@ -415,7 +419,7 @@ function RecipesPage({ forceOpenDialog }) {
         inventoryItems={inventoryItems}
       />
       {/* AI Recipe Filters */}
-            <Box
+      <Box
         sx={{
           mt: 4,
           mb: 2,
@@ -453,7 +457,7 @@ function RecipesPage({ forceOpenDialog }) {
             }}
           >
             <option value="">All Courses</option>
-            {['Dinner','Lunch','Side Dish','South Indian Breakfast','Snack','Dessert','Appetizer','Main Course','World Breakfast','Indian Breakfast','North Indian Breakfast','One Pot Dish','Brunch'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            {['Dinner', 'Lunch', 'Side Dish', 'South Indian Breakfast', 'Snack', 'Dessert', 'Appetizer', 'Main Course', 'World Breakfast', 'Indian Breakfast', 'North Indian Breakfast', 'One Pot Dish', 'Brunch'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
           <select
             value={aiDiet}
@@ -470,7 +474,7 @@ function RecipesPage({ forceOpenDialog }) {
             }}
           >
             <option value="">All Diets</option>
-            {['Vegetarian','High Protein Vegetarian','Non Vegeterian','No Onion No Garlic (Sattvic)','High Protein Non Vegetarian','Diabetic Friendly','Eggetarian','Vegan','Gluten Free','Sugar Free Diet'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            {['Vegetarian', 'High Protein Vegetarian', 'Non Vegeterian', 'No Onion No Garlic (Sattvic)', 'High Protein Non Vegetarian', 'Diabetic Friendly', 'Eggetarian', 'Vegan', 'Gluten Free', 'Sugar Free Diet'].map(opt => <option key={opt} value={opt}>{opt}</option>)}
           </select>
         </Box>
       </Box>
@@ -491,6 +495,7 @@ function RecipesPage({ forceOpenDialog }) {
           return (
             <Grid container spacing={2}>
               {safeRecipes.map((r, i) => {
+                if (!r) return null;
                 // Parse ingredients string to array
                 let ingredientsArr = [];
                 if (r.ingredients) {
@@ -499,7 +504,7 @@ function RecipesPage({ forceOpenDialog }) {
                 let matched = Array.isArray(r.matched_ingredients) ? r.matched_ingredients : [];
                 let missing = Array.isArray(r.missing_ingredients) ? r.missing_ingredients : [];
                 if ((!matched.length && !missing.length) && Array.isArray(ingredientsArr) && Array.isArray(inventoryItems) && inventoryItems.length > 0) {
-                  const invNames = inventoryItems.map(x => (x.name || '').toLowerCase());
+                  const invNames = inventoryItems.map(x => (x?.name || '').toLowerCase());
                   matched = ingredientsArr.filter(ing => invNames.includes(ing.toLowerCase()));
                   missing = ingredientsArr.filter(ing => !invNames.includes(ing.toLowerCase()));
                 }
@@ -553,7 +558,7 @@ function RecipesPage({ forceOpenDialog }) {
                             width: '100%',
                             aspectRatio: '1',
                             display: 'flex',
-                                alignItems: 'center',
+                            alignItems: 'center',
                             justifyContent: 'center',
                             color: '#bbb',
                             fontSize: 32,
@@ -582,12 +587,12 @@ function RecipesPage({ forceOpenDialog }) {
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                               {r.ingredients.split('|').map((ing, idx) => (
-                              <Box key={idx} sx={{ fontSize: 13, bgcolor: theme.colors.hover, px: 1, borderRadius: 1, mr: 0.5 }}>{ing.trim()}</Box>
+                                <Box key={idx} sx={{ fontSize: 13, bgcolor: theme.colors.hover, px: 1, borderRadius: 1, mr: 0.5 }}>{ing.trim()}</Box>
                               ))}
                             </Box>
                           </Box>
                         )}
-                    <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 2, color: theme.colors.text }}>
+                        <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 2, color: theme.colors.text }}>
                           <Box>
                             <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main', display: 'flex', alignItems: 'center', color: theme.colors.text }}>
                               <span role="img" aria-label="check" style={{ marginRight: 4 }}>✔️</span>
@@ -597,7 +602,7 @@ function RecipesPage({ forceOpenDialog }) {
                               {matched.length === 0 ? (
                                 <Typography variant="body2" color="text.secondary">None</Typography>
                               ) : matched.map((ing, idx) => (
-                                <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap',  color: theme.colors.text }}>{ing}</Box>
+                                <Box key={idx} sx={{ bgcolor: 'success.light', color: 'success.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap', color: theme.colors.text }}>{ing}</Box>
                               ))}
                             </Box>
                           </Box>
@@ -610,7 +615,7 @@ function RecipesPage({ forceOpenDialog }) {
                               {missing.length === 0 ? (
                                 <Typography variant="body2" color="text.secondary">None</Typography>
                               ) : missing.map((ing, idx) => (
-                                <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap',  color: theme.colors.text }}>{ing}</Box>
+                                <Box key={idx} sx={{ bgcolor: 'error.light', color: 'error.dark', px: 1, borderRadius: 1, fontSize: 12, whiteSpace: 'nowrap', color: theme.colors.text }}>{ing}</Box>
                               ))}
                             </Box>
                           </Box>
@@ -619,7 +624,7 @@ function RecipesPage({ forceOpenDialog }) {
                           <Button
                             variant="outlined"
                             color="primary"
-                                fullWidth
+                            fullWidth
                             sx={{ fontWeight: 600, fontSize: 15, borderRadius: 2 }}
                             onClick={() => handleSaveToMyRecipes(r)}
                           >
@@ -636,7 +641,7 @@ function RecipesPage({ forceOpenDialog }) {
         })()}
       </Box>
     </Box>
-    );
+  );
 }
 
 export default RecipesPage;
