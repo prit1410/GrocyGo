@@ -61,23 +61,21 @@ function RecipesPage({ forceOpenDialog }) {
 
   // Only fetch suggestions on first mount, filter change, or refresh
   useEffect(() => {
-    if (inventoryItems.length > 0) {
-      setSuggestLoading(true);
-      const aiIngredients = inventoryItems.map(i => i?.name || i);
-      // Create a cache key based on ingredients, course, and diet
-      const cacheKey = JSON.stringify({ aiIngredients, aiCourse, aiDiet });
-      if (aiSuggestCacheRef.current[cacheKey]) {
-        setSuggestedRecipes(aiSuggestCacheRef.current[cacheKey]);
-        setSuggestLoading(false);
-      } else {
-        getSuggestedRecipes(aiIngredients, aiCourse, aiDiet)
-          .then(res => {
-            setSuggestedRecipes(res);
-            aiSuggestCacheRef.current[cacheKey] = res;
-          })
-          .catch(() => setSuggestedRecipes([]))
-          .finally(() => setSuggestLoading(false));
-      }
+    setSuggestLoading(true);
+    const aiIngredients = inventoryItems.map(i => i?.name || i);
+    // Create a cache key based on ingredients, course, and diet
+    const cacheKey = JSON.stringify({ aiIngredients, aiCourse, aiDiet });
+    if (aiSuggestCacheRef.current[cacheKey]) {
+      setSuggestedRecipes(aiSuggestCacheRef.current[cacheKey]);
+      setSuggestLoading(false);
+    } else {
+      getSuggestedRecipes(aiIngredients, aiCourse, aiDiet)
+        .then(res => {
+          setSuggestedRecipes(res);
+          aiSuggestCacheRef.current[cacheKey] = res;
+        })
+        .catch(() => setSuggestedRecipes([]))
+        .finally(() => setSuggestLoading(false));
     }
     // eslint-disable-next-line
   }, [inventoryItems, aiCourse, aiDiet, suggestRefresh]);
@@ -258,8 +256,10 @@ function RecipesPage({ forceOpenDialog }) {
             if (!recipe) return null;
             // Parse ingredients string to array for all recipes
             let ingredientsArr = [];
-            if (recipe.ingredients) {
+            if (typeof recipe.ingredients === 'string') {
               ingredientsArr = recipe.ingredients.split('|').map(x => x.trim().toLowerCase()).filter(Boolean);
+            } else if (Array.isArray(recipe.ingredients)) {
+              ingredientsArr = recipe.ingredients.map(x => x?.name ? x.name.trim().toLowerCase() : String(x).trim().toLowerCase()).filter(Boolean);
             }
             let invNames = Array.isArray(inventoryItems)
               ? inventoryItems.map(x => (x?.name || '').toLowerCase())
@@ -498,8 +498,10 @@ function RecipesPage({ forceOpenDialog }) {
                 if (!r) return null;
                 // Parse ingredients string to array
                 let ingredientsArr = [];
-                if (r.ingredients) {
+                if (typeof r.ingredients === 'string') {
                   ingredientsArr = r.ingredients.split('|').map(x => x.trim().toLowerCase()).filter(Boolean);
+                } else if (Array.isArray(r.ingredients)) {
+                  ingredientsArr = r.ingredients.map(x => x?.name ? x.name.trim().toLowerCase() : String(x).trim().toLowerCase()).filter(Boolean);
                 }
                 let matched = Array.isArray(r.matched_ingredients) ? r.matched_ingredients : [];
                 let missing = Array.isArray(r.missing_ingredients) ? r.missing_ingredients : [];
@@ -582,12 +584,24 @@ function RecipesPage({ forceOpenDialog }) {
                         <Typography variant="body2" color="theme.color.text" sx={{ mb: 1 }}>
                           <b>Prep time:</b> {r.prep_time}
                         </Typography>
-                        {r.ingredients && (
+                        {r.ingredients && typeof r.ingredients === 'string' && (
                           <Box sx={{ mb: 1 }}>
                             <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
                               {r.ingredients.split('|').map((ing, idx) => (
                                 <Box key={idx} sx={{ fontSize: 13, bgcolor: theme.colors.hover, px: 1, borderRadius: 1, mr: 0.5 }}>{ing.trim()}</Box>
+                              ))}
+                            </Box>
+                          </Box>
+                        )}
+                        {r.ingredients && Array.isArray(r.ingredients) && (
+                          <Box sx={{ mb: 1 }}>
+                            <Typography variant="subtitle2" sx={{ fontWeight: 600, display: 'inline', mr: 1 }}>Ingredients:</Typography>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                              {r.ingredients.map((ing, idx) => (
+                                <Box key={idx} sx={{ fontSize: 13, bgcolor: theme.colors.hover, px: 1, borderRadius: 1, mr: 0.5 }}>
+                                  {ing?.name ? ing.name.trim() : String(ing).trim()}
+                                </Box>
                               ))}
                             </Box>
                           </Box>
